@@ -44,8 +44,7 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.koin.android)
-            // implementation(libs.androidx.navigation.compose)
-
+            implementation(libs.androidx.navigation.compose)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -58,14 +57,15 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.bundles.ktor)
 
-            implementation(libs.androidx.navigation3.ui)
-            implementation(libs.androidx.compose.material3)
             implementation(compose.materialIconsExtended)
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor)
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
             implementation(libs.koin.core)
+
+            implementation(libs.dev.icerock.moko.core)
+            implementation(libs.dev.icerock.moko.compose)
         }
 
         iosMain.dependencies {
@@ -120,4 +120,3 @@ android {
 dependencies {
     debugImplementation(compose.uiTooling)
 }
-
