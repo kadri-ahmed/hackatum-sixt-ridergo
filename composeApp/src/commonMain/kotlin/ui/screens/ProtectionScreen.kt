@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -30,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -37,7 +39,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import org.koin.compose.viewmodel.koinViewModel
+import viewmodels.ProtectionViewModel
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -47,69 +55,27 @@ import dto.DeductibleAmount
 import dto.Price
 import dto.ProtectionIncluded
 import dto.ProtectionPackageDto
-import dto.ProtectionPackagePrice
+import org.koin.core.annotation.KoinExperimentalAPI
+import ui.common.ErrorView
+import ui.common.LoadingIndicator
 import ui.common.SixtPrimaryButton
+import ui.state.ProtectionUiState
 import ui.theme.SixtOrange
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, KoinExperimentalAPI::class)
 @Composable
 fun ProtectionScreen(
+    viewModel: ProtectionViewModel = koinViewModel(),
     onBack: () -> Unit,
     onConfirm: () -> Unit
 ) {
-    // Mock Data
-    val packages = listOf(
-        ProtectionPackageDto(
-            id = "1",
-            name = "Basic Protection",
-            deductibleAmount = DeductibleAmount("USD", 1000),
-            ratingStars = 1,
-            isPreviouslySelected = false,
-            isSelected = false,
-            isDeductibleAvailable = true,
-            includes = listOf(
-                ProtectionIncluded("1", "Third Party Liability", "Covers damages to others"),
-                ProtectionIncluded("2", "Theft Protection", "Covers vehicle theft")
-            ),
-            price = ProtectionPackagePrice(0, Price("USD", 0.0, suffix = "/day"), null, Price("USD", 0.0)),
-            isNudge = false
-        ),
-        ProtectionPackageDto(
-            id = "2",
-            name = "Smart Protection",
-            deductibleAmount = DeductibleAmount("USD", 500),
-            ratingStars = 3,
-            isPreviouslySelected = false,
-            isSelected = true,
-            isDeductibleAvailable = true,
-            includes = listOf(
-                ProtectionIncluded("1", "Third Party Liability", "Covers damages to others"),
-                ProtectionIncluded("2", "Theft Protection", "Covers vehicle theft"),
-                ProtectionIncluded("3", "Collision Damage Waiver", "Reduced liability")
-            ),
-            price = ProtectionPackagePrice(0, Price("USD", 15.0, suffix = "/day"), null, Price("USD", 15.0)),
-            isNudge = true
-        ),
-        ProtectionPackageDto(
-            id = "3",
-            name = "Premium Protection",
-            deductibleAmount = DeductibleAmount("USD", 0),
-            ratingStars = 5,
-            isPreviouslySelected = false,
-            isSelected = false,
-            isDeductibleAvailable = true,
-            includes = listOf(
-                ProtectionIncluded("1", "Third Party Liability", "Covers damages to others"),
-                ProtectionIncluded("2", "Theft Protection", "Covers vehicle theft"),
-                ProtectionIncluded("3", "Collision Damage Waiver", "Zero liability"),
-                ProtectionIncluded("4", "Tire & Glass", "Full coverage")
-            ),
-            price = ProtectionPackagePrice(0, Price("USD", 25.0, suffix = "/day"), null, Price("USD", 25.0)),
-            isNudge = false
-        )
-    )
 
-    var selectedPackageId by remember { mutableStateOf("2") }
+    val uiState by viewModel.uiState.collectAsState()
+    var selectedPackageId by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadProtectionPackages()
+    }
 
     Scaffold(
         topBar = {
@@ -117,44 +83,74 @@ fun ProtectionScreen(
                 title = { Text("Protection & Extras") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(paddingValues)
-        ) {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+        },
+        bottomBar = {
+            Surface(
+                shadowElevation = 8.dp,
+                color = MaterialTheme.colorScheme.surface
             ) {
-                item {
-                    Text(
-                        text = "Recommended for Winter Conditions",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                items(packages) { pkg ->
-                    ProtectionCard(
-                        pkg = pkg,
-                        isSelected = pkg.id == selectedPackageId,
-                        onSelect = { selectedPackageId = pkg.id }
+                Column(modifier = Modifier.padding(16.dp)) {
+                    SixtPrimaryButton(
+                        text = "Continue to Booking",
+                        onClick = onConfirm,
+                        enabled = selectedPackageId != null
                     )
                 }
             }
-            
-            Column(modifier = Modifier.padding(16.dp)) {
-                SixtPrimaryButton(
-                    text = "Continue to Booking",
-                    onClick = onConfirm
-                )
+        }
+    ) { paddingValues ->
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            when (val state = uiState) {
+                is ProtectionUiState.Loading -> {
+                    LoadingIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        message = "Loading protection options..."
+                    )
+                }
+                is ProtectionUiState.Error -> {
+                    ErrorView(
+                        modifier = Modifier.align(Alignment.Center),
+                        message = state.message,
+                        onRetry = { viewModel.loadProtectionPackages() }
+                    )
+                }
+                is ProtectionUiState.Success -> {
+                    LazyColumn(
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        item {
+                            Text(
+                                "Travel with peace of mind",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                "Choose the protection level that fits your needs.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+
+                        items(state.packages) { pkg ->
+                            ProtectionCard(
+                                pkg = pkg,
+                                isSelected = pkg.id == selectedPackageId,
+                                onSelect = { selectedPackageId = pkg.id }
+                            )
+                        }
+                    }
+                }
             }
         }
     }

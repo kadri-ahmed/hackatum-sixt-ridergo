@@ -1,5 +1,6 @@
 package repositories
 
+import dto.AddonsDto
 import dto.AvailableVehiclesDto
 import dto.ProtectionPackagesDto
 import network.api.SixtApi
@@ -20,5 +21,9 @@ class VehiclesRepositoryImpl(
     
     override suspend fun getAvailableProtectionPackages(bookingId: String): Result<ProtectionPackagesDto, NetworkError> {
         return api.getAvailableProtectionPackages(bookingId)
+    }
+
+    override suspend fun getAvailableAddons(bookingId: String): Result<AddonsDto, NetworkError> {
+        return api.getAvailableAddons(bookingId)
     }
 }

@@ -5,6 +5,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
+
+// CompositionLocal to allow toggling theme from anywhere
+val LocalThemeIsDark = staticCompositionLocalOf { false }
 
 private val DarkColorScheme = darkColorScheme(
     primary = md_theme_dark_primary,
@@ -65,9 +70,11 @@ fun AppTheme(
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    CompositionLocalProvider(LocalThemeIsDark provides darkTheme) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 }
