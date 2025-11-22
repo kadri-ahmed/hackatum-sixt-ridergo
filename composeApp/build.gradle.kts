@@ -51,7 +51,7 @@ kotlin {
             implementation(libs.androidx.compose.material3)
             implementation(compose.materialIconsExtended)
             implementation(libs.coil.compose)
-//            implementation(libs.coil.network.ktor)
+            implementation(libs.coil.network.ktor)
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
             implementation(libs.koin.core)

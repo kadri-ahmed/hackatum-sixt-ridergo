@@ -44,6 +44,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
+import coil3.compose.LocalPlatformContext
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import dto.Deal
 import dto.Price
 import dto.Pricing
@@ -204,7 +207,6 @@ fun VehicleCard(deal: Deal, onSelect: () -> Unit) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Vehicle Image
             if (deal.vehicle.images.isNotEmpty()) {
                 AsyncImage(
                     model = deal.vehicle.images.first(),

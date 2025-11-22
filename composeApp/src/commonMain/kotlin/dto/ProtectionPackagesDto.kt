@@ -16,8 +16,7 @@ data class ProtectionPackageDto(
     val isSelected: Boolean,
     val isDeductibleAvailable: Boolean,
     val includes: List<ProtectionIncluded> = emptyList(),
-    val excludes: List<ProtectionIncluded> = emptyList(),
-    val price: ProtectionPackagePrice,
+    val price: PriceInfo,
     val isNudge: Boolean,
     // Only present for the fourth option:
     val description: String? = null
@@ -35,12 +34,4 @@ data class ProtectionIncluded(
     val title: String,
     val description: String,
     val tags: List<String> = emptyList()
-)
-
-@Serializable
-data class ProtectionPackagePrice(
-    val discountPercentage: Int,
-    val displayPrice: Price,
-    val listPrice: Price? = null,      // not always present!
-    val totalPrice: Price
 )

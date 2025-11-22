@@ -1,11 +1,18 @@
 package ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -56,19 +63,37 @@ fun HomeScreen(
     val api = remember { SixtApiImpl(client) }
     val repository = remember<VehiclesRepository> { VehiclesRepositoryImpl(api) }
 
-    var deals by remember { mutableStateOf<List<Deal>>(emptyList()) }
+    var allDeals by remember { mutableStateOf<List<Deal>>(emptyList()) }
+    var selectedContext by remember { mutableStateOf<ContextFilter>(ContextFilter.All) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         when (val result = repository.getAvailableVehicles("mock_booking_id")) {
             is Result.Success -> {
-                deals = result.data.deals
+                allDeals = result.data.deals
                 isLoading = false
             }
             is Result.Error -> {
                 error = "Failed to load vehicles"
                 isLoading = false
+            }
+        }
+    }
+
+    val filteredDeals = remember(allDeals, selectedContext) {
+        when (selectedContext) {
+            ContextFilter.All -> allDeals
+            ContextFilter.Mountain -> allDeals.filter { 
+                it.vehicle.groupType.contains("SUV", ignoreCase = true) || 
+                it.vehicle.upsellReasons.any { reason -> reason.title.contains("mountain", ignoreCase = true) }
+            }
+            ContextFilter.City -> allDeals.filter { 
+                it.vehicle.groupType.contains("Sedan", ignoreCase = true) || 
+                it.vehicle.groupType.contains("Compact", ignoreCase = true) 
+            }
+            ContextFilter.Family -> allDeals.filter { 
+                it.vehicle.passengersCount >= 5 || it.vehicle.bagsCount >= 3
             }
         }
     }
@@ -85,6 +110,22 @@ fun HomeScreen(
             color = MaterialTheme.colorScheme.onBackground
         )
         
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Context Chips
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            ContextFilter.values().forEach { filter ->
+                ContextChip(
+                    text = filter.name,
+                    isSelected = selectedContext == filter,
+                    onClick = { selectedContext = filter }
+                )
+            }
+        }
+        
         Spacer(modifier = Modifier.height(24.dp))
 
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -92,23 +133,63 @@ fun HomeScreen(
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             } else if (error != null) {
                 Text(error!!, color = MaterialTheme.colorScheme.error)
-            } else if (deals.isEmpty()) {
-                Text("No more vehicles available.", style = MaterialTheme.typography.bodyLarge)
+            } else if (filteredDeals.isEmpty()) {
+                Text("No vehicles match your criteria.", style = MaterialTheme.typography.bodyLarge)
             } else {
-                deals.reversed().forEach { deal ->
-                    SwipeableVehicleCard(
-                        deal = deal,
-                        onSwipeLeft = {
-                            deals = deals.dropLast(1)
-                        },
-                        onSwipeRight = {
-                            // Handle selection
-                            onVehicleSelect(deal)
-                            deals = deals.dropLast(1)
+                // We use a key to force recomposition when the list changes significantly, 
+                // but for a swipe stack, we might want to just show the top one.
+                // However, the original logic was iterating reversed.
+                // Let's keep the reversed iteration but operate on a local state copy for swiping.
+                // Since filtering changes the whole list, we can just reset the "swipeable" list to filteredDeals.
+                
+                var swipeableDeals by remember(filteredDeals) { mutableStateOf(filteredDeals) }
+                
+                if (swipeableDeals.isEmpty()) {
+                     Text("No more vehicles available.", style = MaterialTheme.typography.bodyLarge)
+                } else {
+                    swipeableDeals.reversed().forEach { deal ->
+                        androidx.compose.runtime.key(deal.vehicle.id) {
+                            SwipeableVehicleCard(
+                                deal = deal,
+                                onSwipeLeft = {
+                                    swipeableDeals = swipeableDeals.drop(1)
+                                },
+                                onSwipeRight = {
+                                    // Handle selection
+                                    onVehicleSelect(deal)
+                                    swipeableDeals = swipeableDeals.drop(1)
+                                }
+                            )
                         }
-                    )
+                    }
                 }
             }
         }
+    }
+}
+
+enum class ContextFilter {
+    All, Mountain, City, Family
+}
+
+@Composable
+fun ContextChip(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Text(
+            text = text,
+            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold
+        )
     }
 }

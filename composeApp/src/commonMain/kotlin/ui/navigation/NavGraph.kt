@@ -9,12 +9,14 @@ import ui.screens.ChatScreen
 import ui.screens.HomeScreen
 import ui.screens.ProfileScreen
 import ui.screens.VehicleDetailScreen
+import ui.screens.BookingSummaryScreen
 
 sealed class Screen(val route: String) {
     object Home : Screen("home")
     object Chat : Screen("chat")
     object Profile : Screen("profile")
     object VehicleDetail : Screen("vehicle_detail")
+    object BookingSummary : Screen("booking_summary")
 }
 
 @Composable
@@ -56,7 +58,23 @@ fun NavGraph(
                 VehicleDetailScreen(
                     deal = selectedVehicle,
                     onBack = { navController.popBackStack() },
-                    onUpgrade = { /* Handle upgrade */ }
+                    onUpgrade = { deal ->
+                        // In a real app, we might update the selected vehicle if it was an upgrade
+                        navController.navigate(Screen.BookingSummary.route)
+                    }
+                )
+            }
+        }
+        composable(Screen.BookingSummary.route) {
+            if (selectedVehicle != null) {
+                BookingSummaryScreen(
+                    deal = selectedVehicle,
+                    onConfirm = {
+                        // Reset to home
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Home.route) { inclusive = true }
+                        }
+                    }
                 )
             }
         }

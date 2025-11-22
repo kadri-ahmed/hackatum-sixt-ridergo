@@ -55,7 +55,6 @@ import dto.DeductibleAmount
 import dto.Price
 import dto.ProtectionIncluded
 import dto.ProtectionPackageDto
-import dto.ProtectionPackagePrice
 import org.koin.core.annotation.KoinExperimentalAPI
 import ui.common.ErrorView
 import ui.common.LoadingIndicator

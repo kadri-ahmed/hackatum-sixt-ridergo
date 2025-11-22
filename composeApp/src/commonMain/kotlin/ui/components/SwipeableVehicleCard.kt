@@ -39,6 +39,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key.Companion.R
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -49,7 +51,9 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
+import coil3.request.crossfade
 import dto.Deal
+import kotlinx.coroutines.Dispatchers
 import ui.screens.FeatureItem
 import ui.theme.SixtOrange
 import kotlin.math.roundToInt
@@ -111,11 +115,8 @@ fun SwipeableVehicleCard(
                         .background(Color.Gray)
                 ) {
                     if (deal.vehicle.images.isNotEmpty()) {
-                        val imageRequest = ImageRequest.Builder(LocalPlatformContext.current)
-                            .data(deal.vehicle.images.first())
-                            .build()
                         AsyncImage(
-                            model = imageRequest,
+                            model = deal.vehicle.images.first(),
                             contentDescription = "${deal.vehicle.brand} ${deal.vehicle.model}",
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
@@ -227,7 +228,7 @@ fun SwipeableVehicleCard(
 }
 
 @Composable
-fun FeatureChip(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {
+fun FeatureChip(icon: ImageVector, text: String) {
     Box(
         modifier = Modifier
             .background(MaterialTheme.colorScheme.surface, CircleShape)

@@ -1,5 +1,6 @@
 package network.api
 
+import dto.AddonsDto
 import dto.AvailableVehiclesDto
 import dto.BookingDto
 import dto.CreateBookingDto
@@ -336,6 +337,37 @@ class SixtApiImpl(private val client: HttpClient) : SixtApi {
                 in 200..299 -> {
                     val carLockSuccess = response.body<Unit>()
                     Result.Success(carLockSuccess)
+                }
+                401 -> Result.Error(NetworkError.UNAUTHORIZED)
+                409 -> Result.Error(NetworkError.CONFLICT)
+                408 -> Result.Error(NetworkError.REQUEST_TIMEOUT)
+                413 -> Result.Error(NetworkError.PAYLOAD_TOO_LARGE)
+                in 500..599 -> Result.Error(NetworkError.SERVER_ERROR)
+                else -> Result.Error(NetworkError.UNKNOWN)
+            }
+        } catch (e: UnresolvedAddressException) {
+            Result.Error(NetworkError.NO_INTERNET)
+        } catch (e: SerializationException) {
+            Result.Error(NetworkError.SERIALIZATION)
+        } catch (e: Exception) {
+            Result.Error(NetworkError.UNKNOWN)
+        }
+    }
+
+    override suspend fun getAvailableAddons(bookingId: String): Result<AddonsDto, NetworkError> {
+        return try {
+            val response = client.get(
+                "$SIXT_API_URL/api/booking/$bookingId/addons"
+            ) {
+                contentType(ContentType.Application.Json)
+            }
+            
+            when(response.status.value) {
+                in 200..299 -> {
+                    val bodyText = response.bodyAsText()
+                    println("DEBUG: Addons Response: $bodyText")
+                    val addons = Json { ignoreUnknownKeys = true }.decodeFromString<AddonsDto>(bodyText)
+                    Result.Success(addons)
                 }
                 401 -> Result.Error(NetworkError.UNAUTHORIZED)
                 409 -> Result.Error(NetworkError.CONFLICT)

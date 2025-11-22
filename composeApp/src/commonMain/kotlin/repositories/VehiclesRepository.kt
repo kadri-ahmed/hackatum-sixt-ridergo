@@ -1,5 +1,6 @@
 package repositories
 
+import dto.AddonsDto
 import dto.AvailableVehiclesDto
 import dto.ProtectionPackagesDto
 import utils.NetworkError
@@ -23,4 +24,11 @@ interface VehiclesRepository {
      * @return Result containing protection packages or an error
      */
     suspend fun getAvailableProtectionPackages(bookingId: String): Result<ProtectionPackagesDto, NetworkError>
+    
+    /**
+     * Retrieves available addons for a booking.
+     * @param bookingId The ID of the booking
+     * @return Result containing addons or an error
+     */
+    suspend fun getAvailableAddons(bookingId: String): Result<AddonsDto, NetworkError>
 }

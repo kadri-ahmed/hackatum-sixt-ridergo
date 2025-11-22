@@ -32,13 +32,6 @@ data class Pricing(
     val totalPrice: Price
 )
 
-@Serializable
-data class Price(
-    val currency: String,
-    val amount: Double,
-    val prefix: String? = null,
-    val suffix: String? = null
-)
 
 @Serializable
 data class ReservationBlockDateTime(
