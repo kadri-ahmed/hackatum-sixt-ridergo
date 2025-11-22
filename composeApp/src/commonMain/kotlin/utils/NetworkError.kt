@@ -2,6 +2,7 @@ package utils
 
 enum class NetworkError : Error {
     REQUEST_TIMEOUT,
+    BAD_REQUEST,
     UNAUTHORIZED,
     CONFLICT,
     TOO_MANY_REQUESTS,
