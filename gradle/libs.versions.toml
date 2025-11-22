@@ -13,8 +13,22 @@ composeMultiplatform = "1.9.1"
 junit = "4.13.2"
 kotlin = "2.2.20"
 ktor = "2.3.12"
-
+navigationCompose = "2.9.1"
+extended-icons-version = "1.7.3"
+material3Version = "1.9.0"
 [libraries]
+
+
+androidx-compose-material3 = {module = "org.jetbrains.compose.material3:material3", version.ref = "material3Version" }
+androidx-compose-material-extended-icons = {module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "extended-icons-version" }
+
+accompanist-systemuicontroller = { module = "com.google.accompanist:accompanist-systemuicontroller", version.ref = "accompanistSystemuicontroller" }
+androidx-material = { module = "androidx.compose.material:material" }
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
+androidx-ui = { module = "androidx.compose.ui:ui" }
+androidx-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+androidx-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+androidx-navigation3-ui = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }

@@ -33,7 +33,6 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.okhttp)
         }
-
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
@@ -44,6 +43,11 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.bundles.ktor)
+
+            implementation(libs.androidx.navigation3.ui)
+            implementation(libs.androidx.compose.material3)
+            implementation(libs.androidx.compose.material.extended.icons)
+
         }
 
         iosMain.dependencies {

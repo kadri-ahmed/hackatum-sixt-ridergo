@@ -1,106 +1,63 @@
 package org.example.ridergo
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 import repositories.BookingRepository
 import repositories.VehiclesRepository
-import utils.NetworkError
-import utils.Result
+import ui.screens.BookingSummaryScreen
+import ui.screens.ProtectionScreen
+import ui.screens.SearchScreen
+import ui.screens.VehicleListScreen
+import ui.theme.AppTheme
 
-@Composable
-fun App(bookingRepository: BookingRepository, vehiclesRepository: VehiclesRepository) {
-    MaterialTheme {
-        Homepage(bookingRepository = bookingRepository)
-    }
+enum class Screen {
+    Search,
+    VehicleList,
+    Protection,
+    BookingSummary
 }
 
 @Composable
-fun Homepage(bookingRepository: BookingRepository) {
-    var isLoading by remember { mutableStateOf(false) }
-    var bookingId by remember { mutableStateOf<String?>(null) }
-    var error by remember { mutableStateOf<NetworkError?>(null) }
-    val coroutineScope = rememberCoroutineScope()
+fun App(bookingRepository: BookingRepository, vehiclesRepository: VehiclesRepository) {
+    var currentScreen by remember { mutableStateOf(Screen.Search) }
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Cleveride",
-                style = MaterialTheme.typography.headlineLarge
-            )
-            
-            Text(
-                text = "Start your booking session",
-                style = MaterialTheme.typography.bodyLarge
-            )
-
-            Button(
-                onClick = {
-                    isLoading = true
-                    error = null
-                    bookingId = null
-                    coroutineScope.launch {
-                        when (val result = bookingRepository.createBooking()) {
-                            is Result.Success -> {
-                                bookingId = result.data.id
-                                isLoading = false
-                            }
-                            is Result.Error -> {
-                                error = result.error
-                                isLoading = false
-                            }
-                        }
+    AppTheme {
+        when (currentScreen) {
+            Screen.Search -> {
+                SearchScreen(
+                    onSearch = { destination ->
+                        // In a real app, we would pass the destination to the ViewModel/Repository
+                        currentScreen = Screen.VehicleList
                     }
-                },
-                enabled = !isLoading
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.padding(end = 8.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                    Text("Creating...")
-                } else {
-                    Text("Start Booking Session")
-                }
-            }
-
-            bookingId?.let { id ->
-                Text(
-                    text = "Booking created! ID: $id",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary
                 )
             }
-
-            error?.let { networkError ->
-                Text(
-                    text = "Error: ${networkError.name}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error
+            Screen.VehicleList -> {
+                VehicleListScreen(
+                    onBack = { currentScreen = Screen.Search },
+                    onVehicleSelected = { deal ->
+                        // Store selected vehicle
+                        currentScreen = Screen.Protection
+                    }
+                )
+            }
+            Screen.Protection -> {
+                ProtectionScreen(
+                    onBack = { currentScreen = Screen.VehicleList },
+                    onConfirm = {
+                        currentScreen = Screen.BookingSummary
+                    }
+                )
+            }
+            Screen.BookingSummary -> {
+                BookingSummaryScreen(
+                    onBack = { currentScreen = Screen.Protection },
+                    onConfirmBooking = {
+                        // Reset flow or show success
+                        currentScreen = Screen.Search
+                    }
                 )
             }
         }
