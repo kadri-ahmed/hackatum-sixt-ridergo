@@ -12,12 +12,18 @@ androidx-testExt = "1.3.0"
 composeMultiplatform = "1.9.1"
 junit = "4.13.2"
 kotlin = "2.2.20"
-ktor = "2.3.12"
+ktor = "3.3.2"
 navigationCompose = "2.9.1"
 extended-icons-version = "1.7.3"
 material3Version = "1.9.0"
-[libraries]
+koin = "4.1.1"
+koin-compose = "4.1.1"
+coil3 = "3.3.0"
+mvvm = "0.16.1"
 
+[libraries]
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil3" }
+coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil3" }
 
 androidx-compose-material3 = {module = "org.jetbrains.compose.material3:material3", version.ref = "material3Version" }
 androidx-compose-material-extended-icons = {module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "extended-icons-version" }
@@ -46,6 +52,21 @@ ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negoti
 ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktor-client-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+
+# Coroutines
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "1.9.0" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version = "1.9.0" }
+
+# MVVM
+dev-icerock-moko-core = { module = "dev.icerock.moko:mvvm-core", version.ref = "mvvm" }
+dev-icerock-moko-compose = { module = "dev.icerock.moko:mvvm-compose", version.ref = "mvvm" }
+
+
+koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koin-compose" }
+koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin-compose" }
+koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
