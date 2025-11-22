@@ -99,12 +99,27 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
+            buildConfigField(
+                "String",
+                "GROQ_API_KEY",
+                "\"${getLocalProperty("GROQ_API_KEY", project)}\""
+            )
+            buildConfigField(
+                "String",
+                "GROQ_MODEL",
+                "\"${getLocalProperty("GROQ_MODEL", project)}\""
+            )
         }
         getByName("debug") {
             buildConfigField(
                 "String",
                 "GROQ_API_KEY",
                 "\"${getLocalProperty("GROQ_API_KEY", project)}\""
+            )
+            buildConfigField(
+                "String",
+                "GROQ_MODEL",
+                "\"${getLocalProperty("GROQ_MODEL", project)}\""
             )
         }
     }

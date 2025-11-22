@@ -4,5 +4,9 @@
     <dict>
         <key>CADisableMinimumFrameDurationOnPhone</key>
         <true/>
+        <key>GROQ_API_KEY</key>
+        <string>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</string>
+        <key>GROQ_MODEL</key>
+        <string>llama-3.3-70b-versatile</string>
     </dict>
 </plist>

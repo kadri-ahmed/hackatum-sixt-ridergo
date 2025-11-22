@@ -92,7 +92,8 @@ fun SixtInput(
     onValueChange: (String) -> Unit,
     label: String,
     modifier: Modifier = Modifier,
-    singleLine: Boolean = true
+    singleLine: Boolean = true,
+    enabled: Boolean = true
 ) {
     OutlinedTextField(
         value = value,
@@ -100,7 +101,8 @@ fun SixtInput(
         label = { Text(label) },
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
-        singleLine = singleLine
+        singleLine = singleLine,
+        enabled = enabled
     )
 }
 

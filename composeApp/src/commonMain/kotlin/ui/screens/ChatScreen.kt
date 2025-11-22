@@ -16,11 +16,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,8 +32,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.annotation.KoinExperimentalAPI
 import ui.common.SixtInput
 import ui.theme.SixtOrange
+import viewmodels.ChatViewModel
 
 data class ChatMessage(
     val text: String,
@@ -40,19 +45,15 @@ data class ChatMessage(
     val offerDetails: String? = null
 )
 
+@OptIn(KoinExperimentalAPI::class)
 @Composable
-fun ChatScreen() {
+fun ChatScreen(
+    viewModel: ChatViewModel = koinViewModel()
+) {
     var messageText by remember { mutableStateOf("") }
-    var messages by remember {
-        mutableStateOf(
-            listOf(
-                ChatMessage("Hello! How can I help you today?", isUser = false),
-                ChatMessage("I'm looking for a car for my weekend trip.", isUser = true),
-                ChatMessage("Great! I have a special offer for you.", isUser = false),
-                ChatMessage("BMW X5 for just $120/day. Interested?", isUser = false, isOffer = true, offerDetails = "BMW X5 - Special Deal")
-            )
-        )
-    }
+    val messages by viewModel.messages.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         LazyColumn(
@@ -62,6 +63,25 @@ fun ChatScreen() {
             items(messages) { message ->
                 ChatBubble(message)
             }
+            
+            // Show loading indicator when waiting for response
+            if (isLoading) {
+                item {
+                    ChatBubble(
+                        ChatMessage("Thinking...", isUser = false)
+                    )
+                }
+            }
+        }
+
+        // Show error message if any
+        errorMessage?.let { error ->
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
         }
 
         Row(
@@ -72,20 +92,27 @@ fun ChatScreen() {
                 SixtInput(
                     value = messageText,
                     onValueChange = { messageText = it },
-                    label = "Type a message..."
+                    label = "Type a message...",
+                    enabled = !isLoading
                 )
             }
             IconButton(
                 onClick = {
-                    if (messageText.isNotBlank()) {
-                        messages = messages + ChatMessage(messageText, isUser = true)
+                    if (messageText.isNotBlank() && !isLoading) {
+                        viewModel.sendMessage(messageText)
                         messageText = ""
-                        // Mock Bot Response
-                        messages = messages + ChatMessage("Let me check that for you...", isUser = false)
                     }
-                }
+                },
+                enabled = !isLoading && messageText.isNotBlank()
             ) {
-                Icon(Icons.Default.Send, contentDescription = "Send", tint = SixtOrange)
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.padding(8.dp),
+                        color = SixtOrange
+                    )
+                } else {
+                    Icon(Icons.Default.Send, contentDescription = "Send", tint = SixtOrange)
+                }
             }
         }
     }
