@@ -1,31 +1,17 @@
 package org.example.ridergo
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import dto.BookingDto
 import kotlinx.coroutines.launch
 import network.api.SixtApiImpl
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
-
-import ridergo.composeapp.generated.resources.Res
-import ridergo.composeapp.generated.resources.compose_multiplatform
 import utils.onError
 import utils.onSuccess
 
@@ -34,6 +20,7 @@ import utils.onSuccess
 fun App(client: SixtApiImpl) {
     MaterialTheme {
         var bookingId by remember { mutableStateOf("") }
+        var booking by remember { mutableStateOf<BookingDto?>(null) }
         var totalAvailableVehicles by remember { mutableStateOf<Int>(0) }
         var isLoading by remember { mutableStateOf(false) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -48,27 +35,51 @@ fun App(client: SixtApiImpl) {
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Button(onClick = { showContent = !showContent }) {
-                Text("Click me!")
+            Button(onClick = {
+                scope.launch {
+                    isLoading = true
+                    errorMessage = null
+
+                    client.createBooking()
+                        .onSuccess {
+                            bookingId = it.id
+                            isLoading = false
+                        }
+                        .onError {
+                            errorMessage = "Failed to retrieve Booking " + it.toString()
+                            isLoading = false
+                        }
+                }
+            }) {
+                Text("Create Booking")
             }
-            AnimatedVisibility(showContent) {
-                val greeting = remember { Greeting().greet() }
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Image(painterResource(Res.drawable.compose_multiplatform), null)
-                    Text("Compose: $greeting")
+
+            if (bookingId.isNotEmpty()) {
+                Text("ID: $bookingId")
+                Button(onClick = {
+                    scope.launch {
+                        isLoading = true
+                        errorMessage = null
+
+                        client.getBooking(bookingId)
+                            .onSuccess {
+                                booking = it
+                                isLoading = false
+                            }
+                            .onError {
+                                errorMessage = it.toString()
+                                isLoading = false
+                            }
+                    }
+                }) {
+                    Text("Get Booking")
                 }
             }
-            TextField(
-                value = bookingId,
-                onValueChange = { bookingId = it },
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .fillMaxWidth(),
-                placeholder = { Text("Booking ID: $bookingId") },
-            )
+
+            if (booking != null) {
+                Text("Booking: $booking")
+            }
+
             Button(onClick = {
                 scope.launch {
                     isLoading = true
@@ -92,7 +103,7 @@ fun App(client: SixtApiImpl) {
                         color = Color.White
                     )
                 } else {
-                    Text("Get Booking")
+                    Text("Get Available Vehicles")
                 }
             }
 
