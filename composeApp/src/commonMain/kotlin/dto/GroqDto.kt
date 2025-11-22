@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class GroqChatRequest(
     val messages: List<GroqMessage>,
-    val model: String = "llama-3.1-70b-versatile",
+    val model: String = "llama-3.3-70b-versatile",
     val temperature: Double = 0.7,
     val max_tokens: Int = 1024
 )

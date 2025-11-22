@@ -21,7 +21,8 @@ class GroqApiImpl(private val client: HttpClient) : GroqApi {
 
     override suspend fun sendChatMessage(messages: List<GroqMessage>, apiKey: String?): Result<GroqChatResponse, NetworkError> {
         return try {
-            val finalApiKey = if (!apiKey.isNullOrBlank()) apiKey else getGroqApiKey()
+            val finalApiKey = if (!apiKey.isNullOrBlank()) apiKey.trim() else getGroqApiKey().trim()
+
             if (finalApiKey.isEmpty()) {
                 return Result.Error(NetworkError.UNAUTHORIZED)
             }
@@ -49,6 +50,11 @@ class GroqApiImpl(private val client: HttpClient) : GroqApi {
                 }
                 401 -> Result.Error(NetworkError.UNAUTHORIZED)
                 429 -> Result.Error(NetworkError.REQUEST_TIMEOUT) // Rate limit
+                in 400..499 -> {
+                    println("DEBUG: Groq API failed with 4xx: ${response.status.value}")
+                    println("DEBUG: Response body: ${response.bodyAsText()}")
+                    Result.Error(NetworkError.BAD_REQUEST)
+                }
                 in 500..599 -> Result.Error(NetworkError.SERVER_ERROR)
                 else -> {
                     println("DEBUG: Groq API failed with status: ${response.status.value}")

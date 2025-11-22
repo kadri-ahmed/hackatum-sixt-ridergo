@@ -44,7 +44,13 @@ class ChatViewModel(
         viewModelScope.launch {
             try {
                 // Convert chat messages to Groq format
-                val groqMessages = _messages.value.map { msg ->
+                // Convert chat messages to Groq format
+                val systemMessage = GroqMessage(
+                    role = "system",
+                    content = "You are a helpful assistant for RiderGo, a premium car rental service. You help users find vehicles. When recommending a vehicle, mention its full name (Brand + Model) clearly."
+                )
+                
+                val groqMessages = listOf(systemMessage) + _messages.value.map { msg ->
                     GroqMessage(
                         role = if (msg.isUser) "user" else "assistant",
                         content = msg.text
@@ -72,8 +78,9 @@ class ChatViewModel(
                         val errorMsg = when (result.error) {
                             utils.NetworkError.NO_INTERNET -> "No internet connection. Please check your network."
                             utils.NetworkError.UNAUTHORIZED -> "API key is invalid or missing. Please check your configuration."
+                            utils.NetworkError.BAD_REQUEST -> "Invalid request. Please check your API key and settings."
                             utils.NetworkError.SERVER_ERROR -> "Server error. Please try again later."
-                            else -> "Failed to get response. Please try again."
+                            else -> "Failed to get response (Error: ${result.error}). Please try again."
                         }
                         _errorMessage.value = errorMsg
                         // Optionally add error message as a bot message

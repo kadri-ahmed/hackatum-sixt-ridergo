@@ -7,5 +7,5 @@ actual fun getGroqApiKey(): String {
 }
 
 actual fun getGroqModel(): String {
-    return BuildConfig.GROQ_MODEL.ifEmpty { "llama-3.1-70b-versatile" }
+    return BuildConfig.GROQ_MODEL.ifEmpty { "llama-3.3-70b-versatile" }
 }
