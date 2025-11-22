@@ -1,6 +1,8 @@
 package ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +25,8 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,12 +40,15 @@ import ui.common.SixtPrimaryButton
 import ui.theme.AppTheme
 import ui.theme.SixtOrange
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ProfileScreen(
     id: Int,
     showDetails: Boolean,
     popBackStack: () -> Unit,
-    popUpToLogin: () -> Unit
+    popUpToLogin: () -> Unit,
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -91,16 +99,107 @@ fun ProfileScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Dark Mode", style = MaterialTheme.typography.bodyLarge)
-                // Note: In a real app, we would change the theme state here.
-                // For this demo, we'll just show the switch.
-                // To implement actual switching, we need to hoist the state to App.kt or use a CompositionLocal that is mutable.
                 Switch(
-                    checked = true, // Mocked as true since we are Dark Mode First
-                    onCheckedChange = { /* Toggle Theme */ },
+                    checked = isDarkTheme,
+                    onCheckedChange = { onToggleTheme() },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = SixtOrange,
                         checkedTrackColor = SixtOrange.copy(alpha = 0.2f)
                     )
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Account Details
+            Row(
+                modifier = Modifier.fillMaxWidth().clickable { /* TODO: Navigate to Account Details */ },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Account Details", style = MaterialTheme.typography.bodyLarge)
+                Icon(
+                    imageVector = Icons.Default.Person, // Placeholder icon
+                    contentDescription = "Account Details",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Support
+            Row(
+                modifier = Modifier.fillMaxWidth().clickable { /* TODO: Navigate to Support */ },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Support", style = MaterialTheme.typography.bodyLarge)
+                 Icon(
+                    imageVector = Icons.Default.Email, // Placeholder icon
+                    contentDescription = "Support",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+             Spacer(modifier = Modifier.height(16.dp))
+
+            // Version
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Version", style = MaterialTheme.typography.bodyLarge)
+                Text("1.0.0", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Live Demo Settings
+            val storage: utils.Storage = org.koin.compose.koinInject()
+            var isLiveDemo by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(storage.getPreference("live_demo_enabled") == "true") }
+            var apiKey by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(storage.getPreference("groq_api_key") ?: "") }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("Live Demo", style = MaterialTheme.typography.bodyLarge)
+                    Text("Enable custom API Key", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = isLiveDemo,
+                    onCheckedChange = { 
+                        isLiveDemo = it 
+                        storage.savePreference("live_demo_enabled", it.toString())
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = SixtOrange,
+                        checkedTrackColor = SixtOrange.copy(alpha = 0.2f)
+                    )
+                )
+            }
+
+            if (isLiveDemo) {
+                Spacer(modifier = Modifier.height(8.dp))
+                ui.common.SixtInput(
+                    value = apiKey,
+                    onValueChange = { 
+                        apiKey = it
+                    },
+                    label = "Groq API Key"
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                ui.common.SixtPrimaryButton(
+                    text = "Save API Key",
+                    onClick = {
+                        storage.savePreference("groq_api_key", apiKey)
+                    }
                 )
             }
         }

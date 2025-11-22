@@ -19,6 +19,8 @@ class ProtectionViewModel(
     private val _uiState = MutableStateFlow<ProtectionUiState>(ProtectionUiState.Loading)
     val uiState: StateFlow<ProtectionUiState> = _uiState.asStateFlow()
 
+    val selectedPackageId: StateFlow<String?> = bookingFlowViewModel.selectedProtectionPackageId
+
     fun loadProtectionPackages() {
         viewModelScope.launch {
             val bookingId = bookingFlowViewModel.bookingId.value ?: run {
@@ -42,5 +44,8 @@ class ProtectionViewModel(
                 }
             }
         }
+    }
+    fun selectPackage(packageId: String) {
+        bookingFlowViewModel.setSelectedProtectionPackageId(packageId)
     }
 }

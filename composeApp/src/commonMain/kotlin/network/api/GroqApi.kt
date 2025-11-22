@@ -6,5 +6,5 @@ import utils.NetworkError
 import utils.Result
 
 interface GroqApi {
-    suspend fun sendChatMessage(messages: List<dto.GroqMessage>): Result<GroqChatResponse, NetworkError>
+    suspend fun sendChatMessage(messages: List<dto.GroqMessage>, apiKey: String? = null): Result<GroqChatResponse, NetworkError>
 }

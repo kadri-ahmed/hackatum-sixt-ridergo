@@ -1,5 +1,6 @@
 package ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,8 +38,22 @@ import network.api.SixtApiImpl
 import repositories.VehiclesRepository
 import repositories.VehiclesRepositoryImpl
 import ui.components.SwipeableVehicleCard
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.ViewCarousel
+import androidx.compose.material.icons.filled.Search
+import ui.common.SlideUpComponent
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
+import ui.components.VehicleCard
+import ui.components.VehicleQuickInfo
 import utils.Result
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
     onVehicleSelect: (Deal) -> Unit,
@@ -98,17 +113,45 @@ fun HomeScreen(
         }
     }
 
+    var isSwipeMode by remember { mutableStateOf(true) }
+    
+    utils.OnShake {
+        isSwipeMode = !isSwipeMode
+    }
+
+    var selectedVehicleForInfo by remember { mutableStateOf<Deal?>(null) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(
-            text = "WHICH VEHICLE WOULD YOU LIKE TO DRIVE TODAY?",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Black,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        // ... (Header and Chips)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "WHICH VEHICLE WOULD YOU LIKE TO DRIVE TODAY?",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.weight(1f)
+            )
+            androidx.compose.material3.IconButton(onClick = { navigateToSearch("mock_booking_id") }) {
+                androidx.compose.material3.Icon(
+                    androidx.compose.material.icons.Icons.Default.Search,
+                    contentDescription = "Search"
+                )
+            }
+            androidx.compose.material3.IconButton(onClick = { isSwipeMode = !isSwipeMode }) {
+                androidx.compose.material3.Icon(
+                    if (isSwipeMode) androidx.compose.material.icons.Icons.Default.List else androidx.compose.material.icons.Icons.Default.ViewCarousel,
+                    contentDescription = "Toggle View"
+                )
+            }
+        }
         
         Spacer(modifier = Modifier.height(16.dp))
         
@@ -136,32 +179,67 @@ fun HomeScreen(
             } else if (filteredDeals.isEmpty()) {
                 Text("No vehicles match your criteria.", style = MaterialTheme.typography.bodyLarge)
             } else {
-                // We use a key to force recomposition when the list changes significantly, 
-                // but for a swipe stack, we might want to just show the top one.
-                // However, the original logic was iterating reversed.
-                // Let's keep the reversed iteration but operate on a local state copy for swiping.
-                // Since filtering changes the whole list, we can just reset the "swipeable" list to filteredDeals.
-                
                 var swipeableDeals by remember(filteredDeals) { mutableStateOf(filteredDeals) }
                 
                 if (swipeableDeals.isEmpty()) {
                      Text("No more vehicles available.", style = MaterialTheme.typography.bodyLarge)
                 } else {
-                    swipeableDeals.reversed().forEach { deal ->
-                        androidx.compose.runtime.key(deal.vehicle.id) {
-                            SwipeableVehicleCard(
-                                deal = deal,
-                                onSwipeLeft = {
-                                    swipeableDeals = swipeableDeals.drop(1)
-                                },
-                                onSwipeRight = {
-                                    // Handle selection
-                                    onVehicleSelect(deal)
-                                    swipeableDeals = swipeableDeals.drop(1)
+                    androidx.compose.animation.AnimatedContent(
+                        targetState = isSwipeMode,
+                        transitionSpec = {
+                            (androidx.compose.animation.scaleIn() + androidx.compose.animation.fadeIn())
+                                .togetherWith(androidx.compose.animation.scaleOut() + androidx.compose.animation.fadeOut())
+                        }
+                    ) { targetMode ->
+                        if (targetMode) {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                swipeableDeals.reversed().forEach { deal ->
+                                    androidx.compose.runtime.key(deal.vehicle.id) {
+                                        SwipeableVehicleCard(
+                                            deal = deal,
+                                            onSwipeLeft = {
+                                                swipeableDeals = swipeableDeals.drop(1)
+                                            },
+                                            onSwipeRight = {
+                                                // Handle selection
+                                                onVehicleSelect(deal)
+                                                swipeableDeals = swipeableDeals.drop(1)
+                                            },
+                                            onLongClick = { selectedVehicleForInfo = deal }
+                                        )
+                                    }
                                 }
-                            )
+                            }
+                        } else {
+                            androidx.compose.foundation.lazy.LazyColumn(
+                                verticalArrangement = Arrangement.spacedBy(16.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(swipeableDeals) { deal ->
+                                    ui.components.VehicleCard(
+                                        deal = deal, 
+                                        onSelect = { onVehicleSelect(deal) },
+                                        onLongClick = { selectedVehicleForInfo = deal }
+                                    )
+                                }
+                            }
                         }
                     }
+                }
+            }
+            
+            if (selectedVehicleForInfo != null) {
+                SlideUpComponent(
+                    isVisible = true,
+                    onDismiss = { selectedVehicleForInfo = null }
+                ) {
+                    VehicleQuickInfo(
+                        deal = selectedVehicleForInfo!!,
+                        onSelect = {
+                            onVehicleSelect(selectedVehicleForInfo!!)
+                            selectedVehicleForInfo = null
+                        }
+                    )
                 }
             }
         }

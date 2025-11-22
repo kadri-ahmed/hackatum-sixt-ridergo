@@ -6,5 +6,5 @@ import utils.NetworkError
 import utils.Result
 
 interface ChatRepository {
-    suspend fun sendMessage(messages: List<GroqMessage>): Result<String, NetworkError>
+    suspend fun sendMessage(messages: List<GroqMessage>, apiKey: String? = null): Result<String, NetworkError>
 }

@@ -34,78 +34,118 @@ import coil3.request.crossfade
 import dto.Deal
 import ui.common.SixtPrimaryButton
 import ui.theme.SixtOrange
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 
 @Composable
 fun BookingSummaryScreen(
-    deal: Deal,
+    viewModel: viewmodels.BookingSummaryViewModel = org.koin.compose.viewmodel.koinViewModel(),
     onConfirm: () -> Unit
 ) {
-    Scaffold { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(100.dp)
-                    .background(SixtOrange.copy(alpha = 0.1f), CircleShape)
-                    .padding(24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Check,
-                    contentDescription = null,
-                    tint = SixtOrange,
-                    modifier = Modifier.size(48.dp)
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            Text(
-                text = "Great Choice!",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = "You selected the ${deal.vehicle.brand} ${deal.vehicle.model}",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            // Vehicle Image
-            if (deal.vehicle.images.isNotEmpty()) {
-                val imageRequest = ImageRequest.Builder(LocalPlatformContext.current)
-                    .data(deal.vehicle.images.first())
-                    .crossfade(true)
-                    .build()
+    val uiState by viewModel.uiState.collectAsState()
 
-                AsyncImage(
-                    model = imageRequest,
-                    contentDescription = "${deal.vehicle.brand} ${deal.vehicle.model}",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .clip(RoundedCornerShape(16.dp)),
-                    contentScale = ContentScale.Crop
-                )
+    LaunchedEffect(Unit) {
+        viewModel.loadBooking()
+    }
+
+    Scaffold { paddingValues ->
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            when (val state = uiState) {
+                is ui.state.BookingSummaryUiState.Loading -> {
+                    ui.common.LoadingIndicator(message = "Loading booking details...")
+                }
+                is ui.state.BookingSummaryUiState.Error -> {
+                    ui.common.ErrorView(
+                        message = state.message,
+                        onRetry = { viewModel.loadBooking() },
+                        onCancel = { 
+                            // Navigate back to home or previous screen
+                            // We can reuse onConfirm which resets to home, or add a specific onCancel
+                            onConfirm() 
+                        },
+                        cancelText = "Back to Home"
+                    )
+                }
+                is ui.state.BookingSummaryUiState.Success -> {
+                    val booking = state.booking
+                    val vehicle = booking.selectedVehicle?.vehicle
+                    
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(100.dp)
+                                .background(SixtOrange.copy(alpha = 0.1f), CircleShape)
+                                .padding(24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = null,
+                                tint = SixtOrange,
+                                modifier = Modifier.size(48.dp)
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.height(24.dp))
+                        
+                        Text(
+                            text = "Great Choice!",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        if (vehicle != null) {
+                            Text(
+                                text = "You selected the ${vehicle.brand} ${vehicle.model}",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            
+                            Spacer(modifier = Modifier.height(32.dp))
+                            
+                            // Vehicle Image
+                            if (vehicle.images.isNotEmpty()) {
+                                AsyncImage(
+                                    model = vehicle.images.first(),
+                                    contentDescription = "${vehicle.brand} ${vehicle.model}",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp)
+                                        .clip(RoundedCornerShape(16.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        } else {
+                             Text("Vehicle details not available")
+                        }
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        if (booking.protectionPackages != null) {
+                             Text(
+                                text = "Protection: ${booking.protectionPackages.name}",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(32.dp))
+                        
+                        SixtPrimaryButton(
+                            text = "Confirm Booking",
+                            onClick = { viewModel.confirmBooking(onConfirm) }
+                        )
+                    }
+                }
             }
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            SixtPrimaryButton(
-                text = "Confirm Booking",
-                onClick = onConfirm
-            )
         }
     }
 }

@@ -9,8 +9,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import repositories.ChatRepository
 import ui.screens.ChatMessage
+import utils.Storage
 
-class ChatViewModel(private val chatRepository: ChatRepository) : ViewModel() {
+class ChatViewModel(
+    private val chatRepository: ChatRepository,
+    private val storage: utils.Storage,
+    private val vehiclesRepository: repositories.VehiclesRepository
+) : ViewModel() {
 
     private val _messages = MutableStateFlow<List<ChatMessage>>(
         listOf(
@@ -45,11 +50,23 @@ class ChatViewModel(private val chatRepository: ChatRepository) : ViewModel() {
                         content = msg.text
                     )
                 }
+                
+                val isLiveDemo = storage.getPreference("live_demo_enabled") == "true"
+                val apiKey = if (isLiveDemo) storage.getPreference("groq_api_key") else null
 
-                when (val result = chatRepository.sendMessage(groqMessages)) {
+                when (val result = chatRepository.sendMessage(groqMessages, apiKey)) {
                     is utils.Result.Success -> {
                         val assistantResponse = result.data
-                        _messages.value = _messages.value + ChatMessage(assistantResponse, isUser = false)
+                        
+                        // Try to find a matching vehicle in the response
+                        val matchingDeal = findMatchingVehicle(assistantResponse)
+                        
+                        _messages.value = _messages.value + ChatMessage(
+                            text = assistantResponse, 
+                            isUser = false,
+                            isOffer = matchingDeal != null,
+                            deal = matchingDeal
+                        )
                     }
                     is utils.Result.Error -> {
                         val errorMsg = when (result.error) {
@@ -81,5 +98,21 @@ class ChatViewModel(private val chatRepository: ChatRepository) : ViewModel() {
 
     fun clearError() {
         _errorMessage.value = null
+    }
+
+    private suspend fun findMatchingVehicle(text: String): dto.Deal? {
+        // This is a simplified matching logic. 
+        // In a real app, you might want to use structured output from the LLM or more robust search.
+        val result = vehiclesRepository.getAvailableVehicles("mock_booking_id")
+        if (result is utils.Result.Success) {
+            val deals = result.data.deals
+            // Check if any vehicle brand+model is mentioned in the text
+            return deals.firstOrNull { deal ->
+                val fullName = "${deal.vehicle.brand} ${deal.vehicle.model}"
+                text.contains(fullName, ignoreCase = true) || 
+                text.contains(deal.vehicle.model, ignoreCase = true)
+            }
+        }
+        return null
     }
 }

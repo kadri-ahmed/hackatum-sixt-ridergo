@@ -19,10 +19,10 @@ class GroqApiImpl(private val client: HttpClient) : GroqApi {
 
     private val GROQ_API_URL: String = "https://api.groq.com/openai/v1/chat/completions"
 
-    override suspend fun sendChatMessage(messages: List<GroqMessage>): Result<GroqChatResponse, NetworkError> {
+    override suspend fun sendChatMessage(messages: List<GroqMessage>, apiKey: String?): Result<GroqChatResponse, NetworkError> {
         return try {
-            val apiKey = getGroqApiKey()
-            if (apiKey.isEmpty()) {
+            val finalApiKey = if (!apiKey.isNullOrBlank()) apiKey else getGroqApiKey()
+            if (finalApiKey.isEmpty()) {
                 return Result.Error(NetworkError.UNAUTHORIZED)
             }
 
@@ -37,7 +37,7 @@ class GroqApiImpl(private val client: HttpClient) : GroqApi {
             val response = client.post(GROQ_API_URL) {
                 contentType(ContentType.Application.Json)
                 headers {
-                    append("Authorization", "Bearer $apiKey")
+                    append("Authorization", "Bearer $finalApiKey")
                 }
                 setBody(request)
             }

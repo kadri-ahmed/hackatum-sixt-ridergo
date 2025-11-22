@@ -7,8 +7,8 @@ import utils.Result
 
 class ChatRepositoryImpl(private val groqApi: GroqApi) : ChatRepository {
 
-    override suspend fun sendMessage(messages: List<GroqMessage>): Result<String, NetworkError> {
-        return when (val result = groqApi.sendChatMessage(messages)) {
+    override suspend fun sendMessage(messages: List<GroqMessage>, apiKey: String?): Result<String, NetworkError> {
+        return when (val result = groqApi.sendChatMessage(messages, apiKey)) {
             is Result.Success -> {
                 val response = result.data
                 val assistantMessage = response.choices.firstOrNull()?.message?.content

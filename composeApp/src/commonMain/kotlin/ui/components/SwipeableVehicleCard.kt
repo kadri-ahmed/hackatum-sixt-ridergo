@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,15 +55,16 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import dto.Deal
 import kotlinx.coroutines.Dispatchers
-import ui.screens.FeatureItem
 import ui.theme.SixtOrange
 import kotlin.math.roundToInt
 
+@androidx.compose.foundation.ExperimentalFoundationApi
 @Composable
 fun SwipeableVehicleCard(
     deal: Deal,
     onSwipeLeft: () -> Unit,
     onSwipeRight: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var offsetX by remember { mutableStateOf(0f) }
@@ -98,7 +100,11 @@ fun SwipeableVehicleCard(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(500.dp),
+                .height(500.dp)
+                .combinedClickable(
+                    onClick = {},
+                    onLongClick = onLongClick
+                ),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant

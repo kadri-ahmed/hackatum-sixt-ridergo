@@ -13,9 +13,11 @@ import ui.screens.BookingSummaryScreen
 
 sealed class Screen(val route: String) {
     object Home : Screen("home")
+    object Search : Screen("search")
     object Chat : Screen("chat")
     object Profile : Screen("profile")
     object VehicleDetail : Screen("vehicle_detail")
+    object Protection : Screen("protection")
     object BookingSummary : Screen("booking_summary")
 }
 
@@ -24,7 +26,9 @@ fun NavGraph(
     navController: NavHostController,
     startDestination: String = Screen.Home.route,
     onVehicleSelect: (Deal) -> Unit,
-    selectedVehicle: Deal?
+    selectedVehicle: Deal?,
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit
 ) {
     NavHost(
         navController = navController,
@@ -37,9 +41,17 @@ fun NavGraph(
                     navController.navigate(Screen.VehicleDetail.route)
                 },
                 navigateToProfile = { _, _ -> navController.navigate(Screen.Profile.route) },
-                navigateToSearch = { },
+                navigateToSearch = { navController.navigate(Screen.Search.route) },
                 popBackStack = { navController.popBackStack() },
                 popUpToLogin = { }
+            )
+        }
+        composable(Screen.Search.route) {
+            ui.screens.SearchScreen(
+                onSearch = { bookingId ->
+                    // If search creates a booking, maybe navigate to home or details?
+                    // For now, just pop back or stay
+                }
             )
         }
         composable(Screen.Chat.route) {
@@ -50,7 +62,9 @@ fun NavGraph(
                 id = 0,
                 showDetails = true,
                 popBackStack = { navController.popBackStack() },
-                popUpToLogin = { }
+                popUpToLogin = { },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = onToggleTheme
             )
         }
         composable(Screen.VehicleDetail.route) {
@@ -59,24 +73,28 @@ fun NavGraph(
                     deal = selectedVehicle,
                     onBack = { navController.popBackStack() },
                     onUpgrade = { deal ->
-                        // In a real app, we might update the selected vehicle if it was an upgrade
-                        navController.navigate(Screen.BookingSummary.route)
+                        navController.navigate(Screen.Protection.route)
                     }
                 )
             }
         }
+        composable(Screen.Protection.route) {
+            ui.screens.ProtectionScreen(
+                onBack = { navController.popBackStack() },
+                onConfirm = {
+                    navController.navigate(Screen.BookingSummary.route)
+                }
+            )
+        }
         composable(Screen.BookingSummary.route) {
-            if (selectedVehicle != null) {
-                BookingSummaryScreen(
-                    deal = selectedVehicle,
-                    onConfirm = {
-                        // Reset to home
-                        navController.navigate(Screen.Home.route) {
-                            popUpTo(Screen.Home.route) { inclusive = true }
-                        }
+            BookingSummaryScreen(
+                onConfirm = {
+                    // Reset to home
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
                     }
-                )
-            }
+                }
+            )
         }
     }
 }

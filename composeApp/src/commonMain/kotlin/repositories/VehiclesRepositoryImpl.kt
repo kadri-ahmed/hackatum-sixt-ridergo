@@ -26,4 +26,18 @@ class VehiclesRepositoryImpl(
     override suspend fun getAvailableAddons(bookingId: String): Result<AddonsDto, NetworkError> {
         return api.getAvailableAddons(bookingId)
     }
+
+    override suspend fun searchVehicles(query: String): Result<AvailableVehiclesDto, NetworkError> {
+        // Mock search by fetching all and filtering
+        return when (val result = api.getAvailableVehicles("mock_booking_id")) {
+            is Result.Success -> {
+                val filtered = result.data.deals.filter { deal ->
+                    deal.vehicle.brand.contains(query, ignoreCase = true) ||
+                    deal.vehicle.model.contains(query, ignoreCase = true)
+                }
+                Result.Success(result.data.copy(deals = filtered))
+            }
+            is Result.Error -> result
+        }
+    }
 }

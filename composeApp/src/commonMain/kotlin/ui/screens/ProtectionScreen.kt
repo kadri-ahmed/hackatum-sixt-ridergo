@@ -71,7 +71,7 @@ fun ProtectionScreen(
 ) {
 
     val uiState by viewModel.uiState.collectAsState()
-    var selectedPackageId by remember { mutableStateOf<String?>(null) }
+    val selectedPackageId by viewModel.selectedPackageId.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.loadProtectionPackages()
@@ -146,7 +146,7 @@ fun ProtectionScreen(
                             ProtectionCard(
                                 pkg = pkg,
                                 isSelected = pkg.id == selectedPackageId,
-                                onSelect = { selectedPackageId = pkg.id }
+                                onSelect = { viewModel.selectPackage(pkg.id) }
                             )
                         }
                     }

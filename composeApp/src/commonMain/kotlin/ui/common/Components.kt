@@ -1,5 +1,6 @@
 package ui.common
 
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +21,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import ui.theme.SixtOrange
@@ -65,20 +67,27 @@ fun SixtSecondaryButton(
     }
 }
 
+@androidx.compose.foundation.ExperimentalFoundationApi
 @Composable
 fun SixtCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .combinedClickable(
+                onClick = onClick ?: {},
+                onLongClick = onLongClick
+            ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        onClick = onClick ?: {}
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             content()
@@ -146,6 +155,8 @@ fun LoadingIndicator(
 fun ErrorView(
     message: String,
     onRetry: (() -> Unit)? = null,
+    onCancel: (() -> Unit)? = null,
+    cancelText: String = "Cancel",
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -171,6 +182,14 @@ fun ErrorView(
             SixtPrimaryButton(
                 text = "Retry",
                 onClick = onRetry,
+                modifier = Modifier.width(200.dp)
+            )
+        }
+        if (onCancel != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+            SixtSecondaryButton(
+                text = cancelText,
+                onClick = onCancel,
                 modifier = Modifier.width(200.dp)
             )
         }

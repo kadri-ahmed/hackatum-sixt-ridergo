@@ -13,6 +13,7 @@ import utils.Result
 
 class SearchViewModel(
     private val bookingRepository: BookingRepository,
+    private val vehiclesRepository: repositories.VehiclesRepository,
     private val bookingFlowViewModel: BookingFlowViewModel
 ) : ViewModel() {
 
@@ -60,6 +61,20 @@ class SearchViewModel(
         }
     }
     
+    fun searchVehicles(query: String) {
+        viewModelScope.launch {
+            _uiState.value = SearchUiState.Loading
+            when (val result = vehiclesRepository.searchVehicles(query)) {
+                is Result.Success -> {
+                    _uiState.value = SearchUiState.SearchResults(result.data.deals)
+                }
+                is Result.Error -> {
+                    _uiState.value = SearchUiState.Error("Failed to search vehicles")
+                }
+            }
+        }
+    }
+
     fun resetState() {
         _uiState.value = SearchUiState.Idle
     }

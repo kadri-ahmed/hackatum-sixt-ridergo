@@ -14,6 +14,7 @@ import repositories.ChatRepository
 import repositories.ChatRepositoryImpl
 import repositories.VehiclesRepository
 import repositories.VehiclesRepositoryImpl
+import com.russhwolf.settings.Settings
 
 expect val platformModule: Module
 
@@ -25,12 +26,17 @@ val appModule = module {
     single<VehiclesRepository> { VehiclesRepositoryImpl(get()) }
     single<ChatRepository> { ChatRepositoryImpl(get()) }
 
-    viewModel { viewmodels.SearchViewModel(get(), get()) }
+    viewModel { viewmodels.SearchViewModel(get(), get(), get()) }
     viewModel { viewmodels.VehicleListViewModel(get(), get()) }
     viewModel { viewmodels.ProtectionViewModel(get(), get()) }
     viewModel { viewmodels.BookingSummaryViewModel(get(), get()) }
-    viewModel { viewmodels.ChatViewModel(get()) }
+    viewModel { viewmodels.ChatViewModel(get(), get(), get()) }
     
     // Shared state for booking flow
-    single { viewmodels.BookingFlowViewModel() }
+    // Shared state for booking flow
+    single { viewmodels.BookingFlowViewModel(get()) }
+
+    // Persistence
+
+    single<utils.Storage> { utils.StorageImpl(get<Settings>()) }
 }

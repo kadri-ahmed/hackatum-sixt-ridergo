@@ -1,5 +1,6 @@
 package ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -60,11 +61,13 @@ import ui.common.SixtPrimaryButton
 import ui.theme.SixtOrange
 import utils.Result
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun VehicleDetailScreen(
     deal: Deal,
     onBack: () -> Unit,
-    onUpgrade: (Deal) -> Unit
+    onUpgrade: (Deal) -> Unit,
+    bookingFlowViewModel: viewmodels.BookingFlowViewModel = org.koin.compose.koinInject()
 ) {
     // Dependency Injection (Simplified)
     val client = remember { 
@@ -133,16 +136,48 @@ fun VehicleDetailScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Vehicle Image
+            // Vehicle Image Gallery
             if (deal.vehicle.images.isNotEmpty()) {
-                AsyncImage(
-                    model = deal.vehicle.images.first(),
-                    contentDescription = "${deal.vehicle.brand} ${deal.vehicle.model}",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .clip(RoundedCornerShape(16.dp)),
-                    contentScale = ContentScale.Crop
-                )
+                val pagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { deal.vehicle.images.size })
+                
+                Box {
+                    androidx.compose.foundation.pager.HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(250.dp) // Increased height slightly
+                    ) { page ->
+                        AsyncImage(
+                            model = deal.vehicle.images[page],
+                            contentDescription = "${deal.vehicle.brand} ${deal.vehicle.model}",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(16.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    
+                    // Indicators
+                    Row(
+                        Modifier
+                            .height(30.dp)
+                            .fillMaxWidth()
+                            .align(Alignment.BottomCenter),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        repeat(pagerState.pageCount) { iteration ->
+                            val color = if (pagerState.currentPage == iteration) SixtOrange else Color.White.copy(alpha = 0.5f)
+                            Box(
+                                modifier = Modifier
+                                    .padding(4.dp)
+                                    .clip(androidx.compose.foundation.shape.CircleShape)
+                                    .background(color)
+                                    .size(8.dp)
+                            )
+                        }
+                    }
+                }
             } else {
                 Box(
                     modifier = Modifier
@@ -251,12 +286,17 @@ fun VehicleDetailScreen(
 
             SixtPrimaryButton(
                 text = "Continue with upgrade",
-                onClick = { onUpgrade(deal) }
+                onClick = { 
+                    bookingFlowViewModel.setBookingId("mock_booking_id")
+                    bookingFlowViewModel.selectVehicle(deal.vehicle.id)
+                    onUpgrade(deal) 
+                }
             )
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun UpgradeCard(brand: String, model: String, price: String, imageUrl: String) {
     SixtCard(

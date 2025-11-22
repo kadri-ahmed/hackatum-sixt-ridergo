@@ -1,5 +1,6 @@
 package ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,12 +38,15 @@ import org.koin.core.annotation.KoinExperimentalAPI
 import ui.common.SixtInput
 import ui.theme.SixtOrange
 import viewmodels.ChatViewModel
+import dto.Deal
+import ui.common.SixtCard
 
 data class ChatMessage(
     val text: String,
     val isUser: Boolean,
     val isOffer: Boolean = false,
-    val offerDetails: String? = null
+    val offerDetails: String? = null,
+    val deal: dto.Deal? = null
 )
 
 @OptIn(KoinExperimentalAPI::class)
@@ -54,6 +58,7 @@ fun ChatScreen(
     val messages by viewModel.messages.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    var selectedVehicle by remember { mutableStateOf<Deal?>(null) }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         LazyColumn(
@@ -61,7 +66,12 @@ fun ChatScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(messages) { message ->
-                ChatBubble(message)
+                ChatBubble(
+                    message = message,
+                    onLongClickVehicle = { deal ->
+                        selectedVehicle = deal
+                    }
+                )
             }
             
             // Show loading indicator when waiting for response
@@ -116,10 +126,28 @@ fun ChatScreen(
             }
         }
     }
+    
+
+    
+    if (selectedVehicle != null) {
+        ui.common.SlideUpComponent(
+            isVisible = true,
+            onDismiss = { selectedVehicle = null }
+        ) {
+            ui.components.VehicleQuickInfo(
+                deal = selectedVehicle!!,
+                onSelect = {
+                    // TODO: Handle selection (e.g. navigate to details or booking)
+                    selectedVehicle = null
+                }
+            )
+        }
+    }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ChatBubble(message: ChatMessage) {
+fun ChatBubble(message: ChatMessage, onLongClickVehicle: ((Deal) -> Unit)? = null) {
     val backgroundColor = if (message.isUser) SixtOrange else MaterialTheme.colorScheme.surfaceVariant
     val contentColor = if (message.isUser) Color.White else MaterialTheme.colorScheme.onSurface
     val alignment = if (message.isUser) Alignment.End else Alignment.Start
@@ -135,23 +163,42 @@ fun ChatBubble(message: ChatMessage) {
                 .clip(shape)
                 .background(backgroundColor)
                 .padding(12.dp)
-                .widthIn(max = 280.dp)
+                .widthIn(max = 300.dp)
         ) {
             Column {
                 Text(text = message.text, color = contentColor)
-                if (message.isOffer) {
+                if (message.deal != null) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
-                            .padding(8.dp)
+                    // Compact Vehicle Card
+                    SixtCard(
+                        onClick = { /* Navigate? */ },
+                        onLongClick = { onLongClickVehicle?.invoke(message.deal) }
                     ) {
-                        Text(
-                            text = "View Offer",
-                            color = contentColor,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                        )
+                        Column {
+                            // Image
+                            if (message.deal.vehicle.images.isNotEmpty()) {
+                                coil3.compose.AsyncImage(
+                                    model = message.deal.vehicle.images.first(),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(100.dp)
+                                        .clip(RoundedCornerShape(8.dp)),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "${message.deal.vehicle.brand} ${message.deal.vehicle.model}",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                            )
+                            Text(
+                                text = "${message.deal.pricing.displayPrice.currency} ${message.deal.pricing.displayPrice.amount} / day",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = SixtOrange
+                            )
+                        }
                     }
                 }
             }

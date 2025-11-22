@@ -33,7 +33,10 @@ enum class MainTab(val title: String, val icon: androidx.compose.ui.graphics.vec
 }
 
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit
+) {
     val navController = rememberNavController()
     var selectedVehicle by remember { mutableStateOf<Deal?>(null) }
 
@@ -79,7 +82,9 @@ fun MainScreen() {
             NavGraph(
                 navController = navController,
                 onVehicleSelect = { deal -> selectedVehicle = deal },
-                selectedVehicle = selectedVehicle
+                selectedVehicle = selectedVehicle,
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = onToggleTheme
             )
         }
     }

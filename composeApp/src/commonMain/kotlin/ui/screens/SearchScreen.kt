@@ -1,5 +1,6 @@
 package ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,9 +44,10 @@ import ui.theme.SixtOrange
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
 import viewmodels.SearchViewModel
+import ui.components.VehicleCard
 
 
-@OptIn(KoinExperimentalAPI::class)
+@OptIn(KoinExperimentalAPI::class, ExperimentalFoundationApi::class)
 @Composable
 fun SearchScreen(
     viewModel: viewmodels.SearchViewModel = koinViewModel(),
@@ -159,6 +161,45 @@ fun SearchScreen(
                     if (destination.isNotEmpty()) {
                         ContextualInsightCard(destination)
                     }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    SectionHeader("Search specific vehicle")
+                    var searchQuery by remember { mutableStateOf("") }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            SixtInput(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                label = "e.g. BMW, Mercedes"
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        SixtPrimaryButton(
+                            text = "Search",
+                            onClick = { viewModel.searchVehicles(searchQuery) },
+                            modifier = Modifier.width(100.dp)
+                        )
+                    }
+
+                    if (uiState is ui.state.SearchUiState.SearchResults) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        val results = (uiState as ui.state.SearchUiState.SearchResults).vehicles
+                        if (results.isEmpty()) {
+                            Text("No vehicles found matching '$searchQuery'")
+                        } else {
+                            Text("Found ${results.size} vehicles:")
+                            Spacer(modifier = Modifier.height(8.dp))
+                            results.forEach { deal ->
+                                ui.components.VehicleCard(
+                                    deal = deal,
+                                    onSelect = { /* Navigate to detail? */ },
+                                    onLongClick = { /* Quick info? */ }
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                        }
+                    }
                 }
             }
             
@@ -195,6 +236,7 @@ fun SearchScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ContextualInsightCard(destination: String) {
     SixtCard {

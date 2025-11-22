@@ -31,4 +31,11 @@ interface VehiclesRepository {
      * @return Result containing addons or an error
      */
     suspend fun getAvailableAddons(bookingId: String): Result<AddonsDto, NetworkError>
+
+    /**
+     * Searches for vehicles matching the query.
+     * @param query The search query (e.g. brand, model)
+     * @return Result containing matching vehicles
+     */
+    suspend fun searchVehicles(query: String): Result<AvailableVehiclesDto, NetworkError>
 }
