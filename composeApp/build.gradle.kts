@@ -32,6 +32,9 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.okhttp)
+            implementation(libs.koin.android)
+            // implementation(libs.androidx.navigation.compose)
+
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -47,7 +50,9 @@ kotlin {
             implementation(libs.androidx.navigation3.ui)
             implementation(libs.androidx.compose.material3)
             implementation(libs.androidx.compose.material.extended.icons)
-
+            implementation(libs.koin.core)
+            implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
         }
 
         iosMain.dependencies {
@@ -56,6 +61,8 @@ kotlin {
 
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.ktor.client.cio)
         }
     }
 }

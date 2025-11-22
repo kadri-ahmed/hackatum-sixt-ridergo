@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
@@ -31,6 +32,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import dto.Deal
 import dto.Price
 import dto.Pricing
@@ -48,106 +53,111 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 import ui.common.SixtCard
 import ui.common.SixtPrimaryButton
+import ui.state.VehicleListUiState
 import ui.theme.SixtOrange
+import org.koin.compose.viewmodel.koinViewModel
+
+import viewmodels.VehicleListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VehicleListScreen(
+    viewModel: viewmodels.VehicleListViewModel = koinViewModel(),
     onBack: () -> Unit,
     onVehicleSelected: (Deal) -> Unit
 ) {
-    // Mock Data
-    val deals = listOf(
-        Deal(
-            vehicle = Vehicle(
-                id = "1",
-                brand = "BMW",
-                model = "X5",
-                acrissCode = "XFAR",
-                images = listOf("https://example.com/bmw_x5.png"),
-                bagsCount = 3,
-                passengersCount = 5,
-                groupType = "SUV",
-                tyreType = "Summer",
-                transmissionType = "Automatic",
-                fuelType = "Petrol",
-                isNewCar = true,
-                isRecommended = true,
-                isMoreLuxury = true,
-                isExcitingDiscount = false,
-                attributes = emptyList(),
-                vehicleStatus = "AVAILABLE",
-                vehicleCost = VehicleCost("USD", 100),
-                upsellReasons = listOf("Great for mountain terrain", "4WD for snow safety")
-            ),
-            pricing = Pricing(
-                discountPercentage = 0,
-                displayPrice = Price("USD", 120.0, suffix = "/day"),
-                totalPrice = Price("USD", 120.0)
-            ),
-            dealInfo = "Premium SUV",
-            tags = listOf("Mountain Ready", "Winter Safe")
-        ),
-        Deal(
-            vehicle = Vehicle(
-                id = "2",
-                brand = "Mercedes-Benz",
-                model = "C-Class",
-                acrissCode = "FDAR",
-                images = listOf("https://example.com/mercedes_c_class.png"),
-                bagsCount = 2,
-                passengersCount = 5,
-                groupType = "Sedan",
-                tyreType = "Summer",
-                transmissionType = "Automatic",
-                fuelType = "Petrol",
-                isNewCar = false,
-                isRecommended = false,
-                isMoreLuxury = false,
-                isExcitingDiscount = true,
-                attributes = emptyList(),
-                vehicleStatus = "AVAILABLE",
-                vehicleCost = VehicleCost("USD", 80),
-                upsellReasons = emptyList()
-            ),
-            pricing = Pricing(
-                discountPercentage = 10,
-                displayPrice = Price("USD", 90.0, suffix = "/day"),
-                totalPrice = Price("USD", 90.0)
-            ),
-            dealInfo = "Comfort Sedan"
-        )
-    )
+    val uiState by viewModel.uiState.collectAsState()
+
+    // In a real app, we would get this ID from navigation arguments
+    // For now, we trigger the load once
+    LaunchedEffect(Unit) {
+        // In a real scenario, this would be passed from SearchScreen
+        viewModel.loadVehicles()
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Select Vehicle") },
+                title = {
+                    Column {
+                        Text("Choose your vehicle", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "Oct 24, 10:00 AM - Oct 27, 10:00 AM",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(paddingValues),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item {
-                Text(
-                    text = "Recommended for your trip to the Mountains",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            items(deals) { deal ->
-                VehicleCard(deal = deal, onSelect = { onVehicleSelected(deal) })
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            when (val state = uiState) {
+                is ui.state.VehicleListUiState.Loading -> {
+                    ui.common.LoadingIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        message = "Finding the best deals for you..."
+                    )
+                }
+                is ui.state.VehicleListUiState.Error -> {
+                    ui.common.ErrorView(
+                        modifier = Modifier.align(Alignment.Center),
+                        message = state.message,
+                        onRetry = { viewModel.loadVehicles() }
+                    )
+                }
+                is ui.state.VehicleListUiState.Empty -> {
+                    ui.common.EmptyStateView(
+                        modifier = Modifier.align(Alignment.Center),
+                        message = "No vehicles available for these dates."
+                    )
+                }
+                is ui.state.VehicleListUiState.Success -> {
+                    LazyColumn(
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // AI Recommendation Header
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        MaterialTheme.colorScheme.secondaryContainer,
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Filled.Star,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    "We found 3 perfect matches for your mountain trip!",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                        }
+
+                        items(state.deals) { deal ->
+                            VehicleCard(deal = deal, onSelect = { onVehicleSelected(deal) })
+                        }
+                    }
+                }
             }
         }
     }
