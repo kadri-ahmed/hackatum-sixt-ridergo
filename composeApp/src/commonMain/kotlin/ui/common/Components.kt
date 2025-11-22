@@ -1,5 +1,10 @@
 package ui.common
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,8 +24,14 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import ui.theme.SixtOrange
 
@@ -31,15 +42,45 @@ fun SixtPrimaryButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
+    var isPressed by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    
+    val scale by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMedium
+        )
+    )
+    
     Button(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth().height(56.dp),
+        onClick = {
+            isPressed = true
+            onClick()
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            },
         shape = RoundedCornerShape(8.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = SixtOrange,
             contentColor = Color.White
         ),
-        enabled = enabled
+        enabled = enabled,
+        interactionSource = androidx.compose.foundation.interaction.MutableInteractionSource().also {
+            androidx.compose.runtime.LaunchedEffect(it) {
+                it.interactions.collect { interaction ->
+                    when (interaction) {
+                        is androidx.compose.foundation.interaction.PressInteraction.Press -> isPressed = true
+                        is androidx.compose.foundation.interaction.PressInteraction.Release -> isPressed = false
+                        is androidx.compose.foundation.interaction.PressInteraction.Cancel -> isPressed = false
+                    }
+                }
+            }
+        }
     ) {
         Text(text = text, style = MaterialTheme.typography.titleMedium)
     }

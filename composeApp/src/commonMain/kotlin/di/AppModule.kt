@@ -8,6 +8,7 @@ import org.koin.core.module.Module
 import org.koin.dsl.module
 import repositories.BookingRepository
 import repositories.BookingRepositoryImpl
+import repositories.PreferencesRepository
 import repositories.VehiclesRepository
 import repositories.VehiclesRepositoryImpl
 
@@ -18,11 +19,14 @@ val appModule = module {
     single<SixtApi> { SixtApiImpl(get()) }
     single<BookingRepository> { BookingRepositoryImpl(get()) }
     single<VehiclesRepository> { VehiclesRepositoryImpl(get()) }
+    single<PreferencesRepository> { PreferencesRepository() }
 
     viewModel { viewmodels.SearchViewModel(get(), get()) }
     viewModel { viewmodels.VehicleListViewModel(get(), get()) }
     viewModel { viewmodels.ProtectionViewModel(get(), get()) }
     viewModel { viewmodels.BookingSummaryViewModel(get(), get()) }
+    viewModel { viewmodels.SettingsViewModel(get()) }
+    viewModel { viewmodels.SuggestionsViewModel(get(), get()) }
     
     // Shared state for booking flow
     single { viewmodels.BookingFlowViewModel() }

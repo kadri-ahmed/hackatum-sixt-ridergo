@@ -1,0 +1,413 @@
+Initialized native services in: /Users/anis/.gradle/native
+Initialized jansi services in: /Users/anis/.gradle/native
+Found daemon DaemonInfo{pid=54665, address=[228ffa68-8db9-40ff-998f-3ae5aafa92b6 port:51690, addresses:[/127.0.0.1]], state=Idle, lastBusy=1763827341203, context=DefaultDaemonContext[uid=62245898-3248-4954-ad44-f410e2406af9,javaHome=/Users/anis/.antigravity/extensions/redhat.java-1.49.0-darwin-arm64/jre/21.0.9-macosx-aarch64,javaVersion=21,javaVendor=Eclipse Adoptium,daemonRegistryDir=/Users/anis/.gradle/daemon,pid=54665,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-Xmx4096M,-Dfile.encoding=UTF-8,-Duser.country=DE,-Duser.language=en,-Duser.variant]} however its context does not match the desired criteria.
+JVM is incompatible.
+Wanted: DaemonRequestContext{jvmCriteria=/Users/anis/Library/Java/JavaVirtualMachines/corretto-18.0.2/Contents/Home (no JDK specified, using current Java home), daemonOpts=[-Xmx4096M, -Dfile.encoding=UTF-8, -Duser.country=DE, -Duser.language=en, -Duser.variant], applyInstrumentationAgent=true, nativeServicesMode=ENABLED, priority=NORMAL}
+Actual: DefaultDaemonContext[uid=62245898-3248-4954-ad44-f410e2406af9,javaHome=/Users/anis/.antigravity/extensions/redhat.java-1.49.0-darwin-arm64/jre/21.0.9-macosx-aarch64,javaVersion=21,javaVendor=Eclipse Adoptium,daemonRegistryDir=/Users/anis/.gradle/daemon,pid=54665,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-Xmx4096M,-Dfile.encoding=UTF-8,-Duser.country=DE,-Duser.language=en,-Duser.variant]
+
+  Looking for a different daemon...
+Found daemon DaemonInfo{pid=63071, address=[3c915d66-6adc-417f-9ea7-83929f0d4236 port:65447, addresses:[/127.0.0.1]], state=Idle, lastBusy=1763827808481, context=DefaultDaemonContext[uid=a8f2ae86-6f27-4a85-b6a9-a6d1a97a8230,javaHome=/Applications/Android Studio.app/Contents/jbr/Contents/Home,javaVersion=21,javaVendor=JetBrains s.r.o.,daemonRegistryDir=/Users/anis/.gradle/daemon,pid=63071,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-Xmx4096M,-Dfile.encoding=UTF-8,-Duser.country=DE,-Duser.language=en,-Duser.variant]} however its context does not match the desired criteria.
+JVM is incompatible.
+Wanted: DaemonRequestContext{jvmCriteria=/Users/anis/Library/Java/JavaVirtualMachines/corretto-18.0.2/Contents/Home (no JDK specified, using current Java home), daemonOpts=[-Xmx4096M, -Dfile.encoding=UTF-8, -Duser.country=DE, -Duser.language=en, -Duser.variant], applyInstrumentationAgent=true, nativeServicesMode=ENABLED, priority=NORMAL}
+Actual: DefaultDaemonContext[uid=a8f2ae86-6f27-4a85-b6a9-a6d1a97a8230,javaHome=/Applications/Android Studio.app/Contents/jbr/Contents/Home,javaVersion=21,javaVendor=JetBrains s.r.o.,daemonRegistryDir=/Users/anis/.gradle/daemon,pid=63071,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-Xmx4096M,-Dfile.encoding=UTF-8,-Duser.country=DE,-Duser.language=en,-Duser.variant]
+
+  Looking for a different daemon...
+The client will now receive all logging from the daemon (pid: 53224). The daemon log file: /Users/anis/.gradle/daemon/8.14.3/daemon-53224.out.log
+Starting 13th build in daemon [uptime: 4 hrs 32 mins 15.957 secs, performance: 99%, GC rate: 0.00/s, heap usage: 0% of 4 GiB]
+Using 8 worker leases.
+Invalidating in-memory cache of /Users/anis/Desktop/hackatum-sixt-ridergo/.gradle/8.14.3/fileHashes/fileHashes.bin
+Invalidating in-memory cache of /Users/anis/Desktop/hackatum-sixt-ridergo/.gradle/8.14.3/fileHashes/resourceHashesCache.bin
+Invalidating in-memory cache of /Users/anis/Desktop/hackatum-sixt-ridergo/.gradle/buildOutputCleanup/outputFiles.bin
+Invalidating in-memory cache of /Users/anis/.gradle/caches/journal-1/file-access.bin
+Now considering [/Users/anis/Desktop/hackatum-sixt-ridergo] as hierarchies to watch
+Invalidating in-memory cache of /Users/anis/.gradle/caches/8.14.3/fileHashes/fileHashes.bin
+Invalidating in-memory cache of /Users/anis/.gradle/caches/8.14.3/fileHashes/resourceHashesCache.bin
+Reusing configuration cache.
+Now considering [/Users/anis/Desktop/hackatum-sixt-ridergo] as hierarchies to watch
+Watching the file system is configured to be enabled if available
+File system watching is active
+Using local directory build cache for the root build (location = /Users/anis/.gradle/caches/build-cache-1, remove unused entries = after 7 days).
+Tasks to be executed: [task ':composeApp:kmpPartiallyResolvedDependenciesChecker', task ':composeApp:checkKotlinGradlePluginConfigurationErrors', task ':composeApp:convertXmlValueResourcesForAndroidMain', task ':composeApp:copyNonXmlValueResourcesForAndroidMain', task ':composeApp:prepareComposeResourcesTaskForAndroidMain', task ':composeApp:generateResourceAccessorsForAndroidMain', task ':composeApp:convertXmlValueResourcesForCommonMain', task ':composeApp:copyNonXmlValueResourcesForCommonMain', task ':composeApp:prepareComposeResourcesTaskForCommonMain', task ':composeApp:generateResourceAccessorsForCommonMain', task ':composeApp:generateActualResourceCollectorsForAndroidMain', task ':composeApp:generateComposeResClass', task ':composeApp:generateExpectResourceCollectorsForCommonMain', task ':composeApp:convertXmlValueResourcesForAndroidDebug', task ':composeApp:copyNonXmlValueResourcesForAndroidDebug', task ':composeApp:prepareComposeResourcesTaskForAndroidDebug', task ':composeApp:generateResourceAccessorsForAndroidDebug', task ':composeApp:preBuild', task ':composeApp:preDebugBuild', task ':composeApp:checkDebugAarMetadata', task ':composeApp:generateDebugResValues', task ':composeApp:mapDebugSourceSetPaths', task ':composeApp:generateDebugResources', task ':composeApp:mergeDebugResources', task ':composeApp:packageDebugResources', task ':composeApp:parseDebugLocalResources', task ':composeApp:createDebugCompatibleScreenManifests', task ':composeApp:extractDeepLinksDebug', task ':composeApp:processDebugMainManifest', task ':composeApp:processDebugManifest', task ':composeApp:processDebugManifestForPackage', task ':composeApp:processDebugResources', task ':composeApp:compileDebugKotlinAndroid', task ':composeApp:javaPreCompileDebug', task ':composeApp:compileDebugJavaWithJavac', task ':composeApp:bundleDebugClassesToRuntimeJar', task ':composeApp:bundleDebugClassesToCompileJar', task ':composeApp:convertXmlValueResourcesForAndroidUnitTest', task ':composeApp:copyNonXmlValueResourcesForAndroidUnitTest', task ':composeApp:prepareComposeResourcesTaskForAndroidUnitTest', task ':composeApp:generateResourceAccessorsForAndroidUnitTest', task ':composeApp:convertXmlValueResourcesForAndroidUnitTestDebug', task ':composeApp:copyNonXmlValueResourcesForAndroidUnitTestDebug', task ':composeApp:prepareComposeResourcesTaskForAndroidUnitTestDebug', task ':composeApp:generateResourceAccessorsForAndroidUnitTestDebug', task ':composeApp:convertXmlValueResourcesForCommonTest', task ':composeApp:copyNonXmlValueResourcesForCommonTest', task ':composeApp:prepareComposeResourcesTaskForCommonTest', task ':composeApp:generateResourceAccessorsForCommonTest', task ':composeApp:compileDebugUnitTestKotlinAndroid', task ':composeApp:preDebugUnitTestBuild', task ':composeApp:javaPreCompileDebugUnitTest', task ':composeApp:compileDebugUnitTestJavaWithJavac', task ':composeApp:processDebugJavaRes', task ':composeApp:processDebugUnitTestJavaRes', task ':composeApp:testDebugUnitTest']
+Tasks that were excluded: []
+Resolve mutations for :composeApp:kmpPartiallyResolvedDependenciesChecker (Thread[Execution worker,5,main]) started.
+Resolve mutations for :composeApp:convertXmlValueResourcesForAndroidMain (Thread[Execution worker Thread 3,5,main]) started.
+Resolve mutations for :composeApp:generateComposeResClass (Thread[Execution worker Thread 2,5,main]) started.
+Resolve mutations for :composeApp:convertXmlValueResourcesForAndroidDebug (Thread[Execution worker Thread 7,5,main]) started.
+Resolve mutations for :composeApp:generateExpectResourceCollectorsForCommonMain (Thread[included builds,5,main]) started.
+Resolve mutations for :composeApp:convertXmlValueResourcesForCommonMain (Thread[Execution worker Thread 5,5,main]) started.
+:composeApp:kmpPartiallyResolvedDependenciesChecker (Thread[Execution worker,5,main]) started.
+Resolve mutations for :composeApp:copyNonXmlValueResourcesForCommonMain (Thread[Execution worker Thread 6,5,main]) started.
+:composeApp:generateExpectResourceCollectorsForCommonMain (Thread[included builds,5,main]) started.
+Resolve mutations for :composeApp:copyNonXmlValueResourcesForAndroidMain (Thread[Execution worker Thread 4,5,main]) started.
+:composeApp:generateComposeResClass (Thread[Execution worker Thread 2,5,main]) started.
+:composeApp:copyNonXmlValueResourcesForAndroidMain (Thread[Execution worker Thread 4,5,main]) started.
+Resolve mutations for :composeApp:copyNonXmlValueResourcesForAndroidDebug (Thread[Execution worker Thread 3,5,main]) started.
+:composeApp:convertXmlValueResourcesForAndroidDebug (Thread[Execution worker Thread 7,5,main]) started.
+Resolve mutations for :composeApp:preBuild (Thread[Execution worker Thread 5,5,main]) started.
+Invalidating in-memory cache of /Users/anis/Desktop/hackatum-sixt-ridergo/.gradle/8.14.3/executionHistory/executionHistory.bin
+:composeApp:copyNonXmlValueResourcesForCommonMain (Thread[Execution worker Thread 6,5,main]) started.
+Resolve mutations for :composeApp:convertXmlValueResourcesForAndroidUnitTest (Thread[Execution worker Thread 3,5,main]) started.
+:composeApp:preBuild (Thread[Execution worker Thread 5,5,main]) started.
+:composeApp:convertXmlValueResourcesForAndroidUnitTest (Thread[Execution worker Thread 3,5,main]) started.
+
+> Task :composeApp:preBuild UP-TO-DATE
+Skipping task ':composeApp:preBuild' as it has no actions.
+Resolve mutations for :composeApp:preDebugBuild (Thread[Execution worker Thread 5,5,main]) started.
+:composeApp:preDebugBuild (Thread[Execution worker Thread 5,5,main]) started.
+Build d66ffeee-f8ad-4e67-b5e9-477070fbdb2b is started
+
+> Task :composeApp:preDebugBuild UP-TO-DATE
+Skipping task ':composeApp:preDebugBuild' as it has no actions.
+Resolve mutations for :composeApp:checkDebugAarMetadata (Thread[Execution worker Thread 5,5,main]) started.
+
+> Task :composeApp:convertXmlValueResourcesForAndroidDebug NO-SOURCE
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/preparedResources/androidDebug/composeResources', not found
+Skipping task ':composeApp:convertXmlValueResourcesForAndroidDebug' as it has no source files and no previous output files.
+
+> Task :composeApp:copyNonXmlValueResourcesForAndroidMain NO-SOURCE
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/preparedResources/androidMain/composeResources', not found
+Skipping task ':composeApp:copyNonXmlValueResourcesForAndroidMain' as it has no source files and no previous output files.
+:composeApp:checkDebugAarMetadata (Thread[Execution worker Thread 5,5,main]) started.
+:composeApp:convertXmlValueResourcesForAndroidMain (Thread[Execution worker Thread 7,5,main]) started.
+:composeApp:copyNonXmlValueResourcesForAndroidDebug (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :composeApp:convertXmlValueResourcesForAndroidUnitTest NO-SOURCE
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/preparedResources/androidUnitTest/composeResources', not found
+Skipping task ':composeApp:convertXmlValueResourcesForAndroidUnitTest' as it has no source files and no previous output files.
+Resolve mutations for :composeApp:generateDebugResValues (Thread[Execution worker Thread 3,5,main]) started.
+:composeApp:generateDebugResValues (Thread[Execution worker Thread 3,5,main]) started.
+
+> Task :composeApp:kmpPartiallyResolvedDependenciesChecker
+Caching disabled for task ':composeApp:kmpPartiallyResolvedDependenciesChecker' because:
+  This task is not intended for execution
+Task ':composeApp:kmpPartiallyResolvedDependenciesChecker' is not up-to-date because:
+  Task has not declared any outputs despite executing actions.
+Execution stopped by some action with message: null
+
+> Task :composeApp:convertXmlValueResourcesForAndroidMain NO-SOURCE
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/preparedResources/androidMain/composeResources', not found
+Skipping task ':composeApp:convertXmlValueResourcesForAndroidMain' as it has no source files and no previous output files.
+
+> Task :composeApp:copyNonXmlValueResourcesForAndroidDebug NO-SOURCE
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/preparedResources/androidDebug/composeResources', not found
+Skipping task ':composeApp:copyNonXmlValueResourcesForAndroidDebug' as it has no source files and no previous output files.
+Resolve mutations for :composeApp:checkKotlinGradlePluginConfigurationErrors (Thread[Execution worker,5,main]) started.
+Resolve mutations for :composeApp:prepareComposeResourcesTaskForAndroidMain (Thread[Execution worker Thread 7,5,main]) started.
+Resolve mutations for :composeApp:prepareComposeResourcesTaskForAndroidDebug (Thread[Execution worker Thread 4,5,main]) started.
+:composeApp:checkKotlinGradlePluginConfigurationErrors (Thread[Execution worker,5,main]) started.
+
+> Task :composeApp:generateExpectResourceCollectorsForCommonMain UP-TO-DATE
+Caching disabled for task ':composeApp:generateExpectResourceCollectorsForCommonMain' because:
+  Caching has not been enabled for the task
+Skipping task ':composeApp:generateExpectResourceCollectorsForCommonMain' as it is up-to-date.
+
+> Task :composeApp:generateComposeResClass UP-TO-DATE
+Caching disabled for task ':composeApp:generateComposeResClass' because:
+  Caching has not been enabled for the task
+Skipping task ':composeApp:generateComposeResClass' as it is up-to-date.
+Resolve mutations for :composeApp:createDebugCompatibleScreenManifests (Thread[included builds,5,main]) started.
+Resolve mutations for :composeApp:javaPreCompileDebug (Thread[Execution worker Thread 2,5,main]) started.
+:composeApp:prepareComposeResourcesTaskForAndroidDebug (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :composeApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+Skipping task ':composeApp:checkKotlinGradlePluginConfigurationErrors' as task onlyIf 'errorDiagnostics are present' is false.
+:composeApp:prepareComposeResourcesTaskForAndroidMain (Thread[Execution worker Thread 7,5,main]) started.
+Resolve mutations for :composeApp:copyNonXmlValueResourcesForAndroidUnitTest (Thread[Execution worker,5,main]) started.
+:composeApp:createDebugCompatibleScreenManifests (Thread[included builds,5,main]) started.
+
+> Task :composeApp:copyNonXmlValueResourcesForCommonMain UP-TO-DATE
+Caching disabled for task ':composeApp:copyNonXmlValueResourcesForCommonMain' because:
+  Caching has not been enabled for the task
+Skipping task ':composeApp:copyNonXmlValueResourcesForCommonMain' as it is up-to-date.
+:composeApp:convertXmlValueResourcesForCommonMain (Thread[Execution worker Thread 6,5,main]) started.
+:composeApp:javaPreCompileDebug (Thread[Execution worker Thread 2,5,main]) started.
+:composeApp:copyNonXmlValueResourcesForAndroidUnitTest (Thread[Execution worker,5,main]) started.
+
+> Task :composeApp:convertXmlValueResourcesForCommonMain NO-SOURCE
+Skipping task ':composeApp:convertXmlValueResourcesForCommonMain' as it has no source files and no previous output files.
+
+> Task :composeApp:generateDebugResValues UP-TO-DATE
+Build cache key for task ':composeApp:generateDebugResValues' is 342bc0fc1026abe190ff949a6a4eb110
+Skipping task ':composeApp:generateDebugResValues' as it is up-to-date.
+Resolve mutations for :composeApp:mapDebugSourceSetPaths (Thread[Execution worker Thread 3,5,main]) started.
+
+> Task :composeApp:createDebugCompatibleScreenManifests UP-TO-DATE
+Caching disabled for task ':composeApp:createDebugCompatibleScreenManifests' because:
+  Caching has been disabled for the task
+Skipping task ':composeApp:createDebugCompatibleScreenManifests' as it is up-to-date.
+
+> Task :composeApp:copyNonXmlValueResourcesForAndroidUnitTest NO-SOURCE
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/preparedResources/androidUnitTest/composeResources', not found
+Skipping task ':composeApp:copyNonXmlValueResourcesForAndroidUnitTest' as it has no source files and no previous output files.
+:composeApp:mapDebugSourceSetPaths (Thread[Execution worker Thread 3,5,main]) started.
+Resolve mutations for :composeApp:prepareComposeResourcesTaskForCommonMain (Thread[Execution worker Thread 6,5,main]) started.
+Resolve mutations for :composeApp:extractDeepLinksDebug (Thread[included builds,5,main]) started.
+:composeApp:extractDeepLinksDebug (Thread[included builds,5,main]) started.
+:composeApp:prepareComposeResourcesTaskForCommonMain (Thread[Execution worker Thread 6,5,main]) started.
+Resolve mutations for :composeApp:generateDebugResources (Thread[Execution worker,5,main]) started.
+:composeApp:generateDebugResources (Thread[Execution worker,5,main]) started.
+
+> Task :composeApp:javaPreCompileDebug UP-TO-DATE
+Build cache key for task ':composeApp:javaPreCompileDebug' is bb09a7c45c89d0547d6924598af1a6ed
+Skipping task ':composeApp:javaPreCompileDebug' as it is up-to-date.
+Resolve mutations for :composeApp:prepareComposeResourcesTaskForAndroidUnitTest (Thread[Execution worker Thread 2,5,main]) started.
+:composeApp:prepareComposeResourcesTaskForAndroidUnitTest (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :composeApp:extractDeepLinksDebug UP-TO-DATE
+Build cache key for task ':composeApp:extractDeepLinksDebug' is 909ca977d311bc3e7b4f677cb0c78c1d
+Skipping task ':composeApp:extractDeepLinksDebug' as it is up-to-date.
+Resolve mutations for :composeApp:processDebugMainManifest (Thread[included builds,5,main]) started.
+:composeApp:processDebugMainManifest (Thread[included builds,5,main]) started.
+
+> Task :composeApp:prepareComposeResourcesTaskForCommonMain UP-TO-DATE
+Caching disabled for task ':composeApp:prepareComposeResourcesTaskForCommonMain' because:
+  Caching has not been enabled for the task
+Skipping task ':composeApp:prepareComposeResourcesTaskForCommonMain' as it is up-to-date.
+Resolve mutations for :composeApp:generateResourceAccessorsForCommonMain (Thread[Execution worker Thread 6,5,main]) started.
+:composeApp:generateResourceAccessorsForCommonMain (Thread[Execution worker Thread 6,5,main]) started.
+
+> Task :composeApp:checkDebugAarMetadata UP-TO-DATE
+Caching disabled for task ':composeApp:checkDebugAarMetadata' because:
+  Caching has been disabled for the task
+Skipping task ':composeApp:checkDebugAarMetadata' as it is up-to-date.
+Resolve mutations for :composeApp:convertXmlValueResourcesForAndroidUnitTestDebug (Thread[Execution worker Thread 5,5,main]) started.
+:composeApp:convertXmlValueResourcesForAndroidUnitTestDebug (Thread[Execution worker Thread 5,5,main]) started.
+
+> Task :composeApp:prepareComposeResourcesTaskForAndroidDebug NO-SOURCE
+Skipping task ':composeApp:prepareComposeResourcesTaskForAndroidDebug' as it has no source files and no previous output files.
+Resolve mutations for :composeApp:generateResourceAccessorsForAndroidDebug (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :composeApp:prepareComposeResourcesTaskForAndroidUnitTest NO-SOURCE
+Skipping task ':composeApp:prepareComposeResourcesTaskForAndroidUnitTest' as it has no source files and no previous output files.
+Resolve mutations for :composeApp:generateResourceAccessorsForAndroidUnitTest (Thread[Execution worker Thread 2,5,main]) started.
+:composeApp:generateResourceAccessorsForAndroidUnitTest (Thread[Execution worker Thread 2,5,main]) started.
+:composeApp:generateResourceAccessorsForAndroidDebug (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :composeApp:convertXmlValueResourcesForAndroidUnitTestDebug NO-SOURCE
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/preparedResources/androidUnitTestDebug/composeResources', not found
+Skipping task ':composeApp:convertXmlValueResourcesForAndroidUnitTestDebug' as it has no source files and no previous output files.
+Resolve mutations for :composeApp:copyNonXmlValueResourcesForAndroidUnitTestDebug (Thread[Execution worker Thread 5,5,main]) started.
+
+> Task :composeApp:prepareComposeResourcesTaskForAndroidMain NO-SOURCE
+Skipping task ':composeApp:prepareComposeResourcesTaskForAndroidMain' as it has no source files and no previous output files.
+Resolve mutations for :composeApp:generateResourceAccessorsForAndroidMain (Thread[Execution worker Thread 7,5,main]) started.
+:composeApp:generateResourceAccessorsForAndroidMain (Thread[Execution worker Thread 7,5,main]) started.
+:composeApp:copyNonXmlValueResourcesForAndroidUnitTestDebug (Thread[Execution worker Thread 5,5,main]) started.
+
+> Task :composeApp:generateDebugResources UP-TO-DATE
+Build cache key for task ':composeApp:generateDebugResources' is 0e59f871dfcf1ed258e2ff542325fec5
+Skipping task ':composeApp:generateDebugResources' as it is up-to-date.
+Resolve mutations for :composeApp:mergeDebugResources (Thread[Execution worker,5,main]) started.
+
+> Task :composeApp:generateResourceAccessorsForCommonMain UP-TO-DATE
+Caching disabled for task ':composeApp:generateResourceAccessorsForCommonMain' because:
+  Caching has not been enabled for the task
+Skipping task ':composeApp:generateResourceAccessorsForCommonMain' as it is up-to-date.
+
+> Task :composeApp:copyNonXmlValueResourcesForAndroidUnitTestDebug NO-SOURCE
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/preparedResources/androidUnitTestDebug/composeResources', not found
+Skipping task ':composeApp:copyNonXmlValueResourcesForAndroidUnitTestDebug' as it has no source files and no previous output files.
+Resolve mutations for :composeApp:packageDebugResources (Thread[Execution worker Thread 5,5,main]) started.
+:composeApp:packageDebugResources (Thread[Execution worker Thread 5,5,main]) started.
+:composeApp:mergeDebugResources (Thread[Execution worker,5,main]) started.
+Resolve mutations for :composeApp:prepareComposeResourcesTaskForAndroidUnitTestDebug (Thread[Execution worker Thread 6,5,main]) started.
+
+> Task :composeApp:generateResourceAccessorsForAndroidUnitTest NO-SOURCE
+Skipping task ':composeApp:generateResourceAccessorsForAndroidUnitTest' as it has no source files and no previous output files.
+Resolve mutations for :composeApp:convertXmlValueResourcesForCommonTest (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :composeApp:generateResourceAccessorsForAndroidDebug NO-SOURCE
+Skipping task ':composeApp:generateResourceAccessorsForAndroidDebug' as it has no source files and no previous output files.
+Resolve mutations for :composeApp:copyNonXmlValueResourcesForCommonTest (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :composeApp:generateResourceAccessorsForAndroidMain NO-SOURCE
+Skipping task ':composeApp:generateResourceAccessorsForAndroidMain' as it has no source files and no previous output files.
+Resolve mutations for :composeApp:generateActualResourceCollectorsForAndroidMain (Thread[Execution worker Thread 4,5,main]) started.
+:composeApp:copyNonXmlValueResourcesForCommonTest (Thread[Execution worker Thread 7,5,main]) started.
+Resolve mutations for :composeApp:preDebugUnitTestBuild (Thread[Execution worker Thread 2,5,main]) started.
+:composeApp:preDebugUnitTestBuild (Thread[Execution worker Thread 2,5,main]) started.
+
+> Task :composeApp:preDebugUnitTestBuild UP-TO-DATE
+Skipping task ':composeApp:preDebugUnitTestBuild' as it has no actions.
+Resolve mutations for :composeApp:javaPreCompileDebugUnitTest (Thread[Execution worker Thread 2,5,main]) started.
+:composeApp:javaPreCompileDebugUnitTest (Thread[Execution worker Thread 2,5,main]) started.
+:composeApp:generateActualResourceCollectorsForAndroidMain (Thread[Execution worker Thread 4,5,main]) started.
+:composeApp:prepareComposeResourcesTaskForAndroidUnitTestDebug (Thread[Execution worker Thread 6,5,main]) started.
+
+> Task :composeApp:mapDebugSourceSetPaths UP-TO-DATE
+Caching disabled for task ':composeApp:mapDebugSourceSetPaths' because:
+  Caching has been disabled for the task
+Skipping task ':composeApp:mapDebugSourceSetPaths' as it is up-to-date.
+
+> Task :composeApp:copyNonXmlValueResourcesForCommonTest NO-SOURCE
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/preparedResources/commonTest/composeResources', not found
+Skipping task ':composeApp:copyNonXmlValueResourcesForCommonTest' as it has no source files and no previous output files.
+:composeApp:convertXmlValueResourcesForCommonTest (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :composeApp:javaPreCompileDebugUnitTest UP-TO-DATE
+Build cache key for task ':composeApp:javaPreCompileDebugUnitTest' is bb09a7c45c89d0547d6924598af1a6ed
+Skipping task ':composeApp:javaPreCompileDebugUnitTest' as it is up-to-date.
+
+> Task :composeApp:processDebugMainManifest UP-TO-DATE
+Build cache key for task ':composeApp:processDebugMainManifest' is df4c07682120968392fb47a433a41f75
+Skipping task ':composeApp:processDebugMainManifest' as it is up-to-date.
+
+> Task :composeApp:packageDebugResources UP-TO-DATE
+Build cache key for task ':composeApp:packageDebugResources' is ec54e5c8b2ea3f0cc3a5e29631ac79d9
+Skipping task ':composeApp:packageDebugResources' as it is up-to-date.
+Resolve mutations for :composeApp:parseDebugLocalResources (Thread[included builds,5,main]) started.
+Resolve mutations for :composeApp:processDebugManifest (Thread[Execution worker Thread 5,5,main]) started.
+:composeApp:parseDebugLocalResources (Thread[included builds,5,main]) started.
+:composeApp:processDebugManifest (Thread[Execution worker Thread 5,5,main]) started.
+
+> Task :composeApp:convertXmlValueResourcesForCommonTest NO-SOURCE
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/preparedResources/commonTest/composeResources', not found
+Skipping task ':composeApp:convertXmlValueResourcesForCommonTest' as it has no source files and no previous output files.
+Resolve mutations for :composeApp:prepareComposeResourcesTaskForCommonTest (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :composeApp:generateActualResourceCollectorsForAndroidMain UP-TO-DATE
+Caching disabled for task ':composeApp:generateActualResourceCollectorsForAndroidMain' because:
+  Caching has not been enabled for the task
+Skipping task ':composeApp:generateActualResourceCollectorsForAndroidMain' as it is up-to-date.
+
+> Task :composeApp:prepareComposeResourcesTaskForAndroidUnitTestDebug NO-SOURCE
+Skipping task ':composeApp:prepareComposeResourcesTaskForAndroidUnitTestDebug' as it has no source files and no previous output files.
+:composeApp:prepareComposeResourcesTaskForCommonTest (Thread[Execution worker Thread 7,5,main]) started.
+Resolve mutations for :composeApp:generateResourceAccessorsForAndroidUnitTestDebug (Thread[Execution worker Thread 6,5,main]) started.
+:composeApp:generateResourceAccessorsForAndroidUnitTestDebug (Thread[Execution worker Thread 6,5,main]) started.
+
+> Task :composeApp:generateResourceAccessorsForAndroidUnitTestDebug NO-SOURCE
+Skipping task ':composeApp:generateResourceAccessorsForAndroidUnitTestDebug' as it has no source files and no previous output files.
+
+> Task :composeApp:prepareComposeResourcesTaskForCommonTest NO-SOURCE
+Skipping task ':composeApp:prepareComposeResourcesTaskForCommonTest' as it has no source files and no previous output files.
+Resolve mutations for :composeApp:generateResourceAccessorsForCommonTest (Thread[Execution worker Thread 7,5,main]) started.
+
+> Task :composeApp:parseDebugLocalResources UP-TO-DATE
+Build cache key for task ':composeApp:parseDebugLocalResources' is 2c5f95ffe60a1a96b7f8cb038427f47f
+Skipping task ':composeApp:parseDebugLocalResources' as it is up-to-date.
+
+> Task :composeApp:processDebugManifest UP-TO-DATE
+Build cache key for task ':composeApp:processDebugManifest' is d50bccae21df3e04abb3de6321acfa61
+Skipping task ':composeApp:processDebugManifest' as it is up-to-date.
+:composeApp:generateResourceAccessorsForCommonTest (Thread[Execution worker Thread 7,5,main]) started.
+Resolve mutations for :composeApp:processDebugManifestForPackage (Thread[Execution worker Thread 4,5,main]) started.
+:composeApp:processDebugManifestForPackage (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :composeApp:mergeDebugResources UP-TO-DATE
+Build cache key for task ':composeApp:mergeDebugResources' is 34ccd386e00dfa3ad13b839a2dc1d80f
+Skipping task ':composeApp:mergeDebugResources' as it is up-to-date.
+
+> Task :composeApp:generateResourceAccessorsForCommonTest NO-SOURCE
+Skipping task ':composeApp:generateResourceAccessorsForCommonTest' as it has no source files and no previous output files.
+
+> Task :composeApp:processDebugManifestForPackage UP-TO-DATE
+Build cache key for task ':composeApp:processDebugManifestForPackage' is d0e56096b686d280ba83074494749114
+Skipping task ':composeApp:processDebugManifestForPackage' as it is up-to-date.
+Resolve mutations for :composeApp:processDebugResources (Thread[Execution worker Thread 4,5,main]) started.
+:composeApp:processDebugResources (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :composeApp:processDebugResources UP-TO-DATE
+Build cache key for task ':composeApp:processDebugResources' is 57fab73376721693ed0c07c819219203
+Skipping task ':composeApp:processDebugResources' as it is up-to-date.
+Resolve mutations for :composeApp:compileDebugKotlinAndroid (Thread[Execution worker Thread 4,5,main]) started.
+:composeApp:compileDebugKotlinAndroid (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :composeApp:compileDebugKotlinAndroid FAILED
+Build cache key for task ':composeApp:compileDebugKotlinAndroid' is cf809c23857fd97170af90497bd598ce
+Task ':composeApp:compileDebugKotlinAndroid' is not up-to-date because:
+  Value of input property 'kotlinJavaToolchainProvider.javaVersion' has changed for task ':composeApp:compileDebugKotlinAndroid'
+The input changes require a full rebuild for incremental task ':composeApp:compileDebugKotlinAndroid'.
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/androidDebug/kotlin', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/kotlin/androidDebugResourceAccessors', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/debug/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/debug/kotlin', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/kotlin/androidMainResourceAccessors', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/main/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/main/kotlin', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/main/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/debug/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/androidDebug/kotlin', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/kotlin/androidDebugResourceAccessors', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/debug/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/debug/kotlin', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/androidDebug/kotlin', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/kotlin/androidDebugResourceAccessors', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/debug/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/debug/kotlin', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/kotlin/androidMainResourceAccessors', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/main/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/main/kotlin', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/main/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/debug/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/androidDebug/kotlin', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/kotlin/androidDebugResourceAccessors', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/debug/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/debug/kotlin', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/kotlin/androidMainResourceAccessors', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/main/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/main/kotlin', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/main/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/debug/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/androidDebug/kotlin', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/kotlin/androidDebugResourceAccessors', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/debug/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/debug/kotlin', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/kotlin/androidMainResourceAccessors', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/main/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/main/kotlin', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/main/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/debug/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/androidDebug/kotlin', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/kotlin/androidDebugResourceAccessors', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/debug/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/debug/kotlin', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/kotlin/androidMainResourceAccessors', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/main/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/main/kotlin', not found
+Kotlin source files: /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/androidMain/kotlin/di/AppModule.android.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/androidMain/kotlin/org/example/ridergo/MainActivity.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/androidMain/kotlin/org/example/ridergo/RiderGoApplication.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/androidMain/kotlin/org/example/ridergo/Platform.android.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/kotlin/androidMainResourceCollectors/ridergo/composeapp/generated/resources/ActualResourceCollectors.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/dto/AvailableVehiclesDto.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/dto/LocationDto.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/dto/BookingDto.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/dto/ProtectionPackagesDto.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/ui/state/SearchUiState.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/ui/state/VehicleListUiState.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/ui/state/ProtectionUiState.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/ui/state/BookingSummaryUiState.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/ui/screens/ProtectionScreen.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/ui/screens/LoginScreen.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/ui/screens/HomeScreen.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/ui/screens/BookingSummaryScreen.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/ui/screens/SearchScreen.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/ui/screens/VehicleListScreen.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/ui/screens/ProfileScreen.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/ui/common/Components.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/ui/common/DefaultButton.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/ui/theme/Shape.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/ui/theme/Color.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/ui/theme/Theme.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/ui/theme/Type.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/viewmodels/VehicleListViewModel.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/viewmodels/SearchViewModel.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/viewmodels/BookingSummaryViewModel.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/viewmodels/ProtectionViewModel.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/di/AppModule.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/org/example/ridergo/App.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/org/example/ridergo/Platform.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/org/example/ridergo/Greeting.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/network/api/SixtApi.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/network/api/SixtApiImpl.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/network/createHttpClient.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/navigation/NavGraph.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/navigation/Screen.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/utils/Result.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/utils/NetworkError.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/utils/Error.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/repositories/BookingRepository.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/repositories/CarControlRepository.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/repositories/VehiclesRepository.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/repositories/VehiclesRepositoryImpl.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/repositories/BookingRepositoryImpl.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/repositories/CarControlRepositoryImpl.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/models/DestinationContext.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/kotlin/commonResClass/ridergo/composeapp/generated/resources/Res.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/kotlin/commonMainResourceAccessors/ridergo/composeapp/generated/resources/Drawable0.commonMain.kt, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/kotlin/commonMainResourceCollectors/ridergo/composeapp/generated/resources/ExpectResourceCollectors.kt
+Java source files: 
+Script source files: 
+Script file extensions: 
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/androidDebug/kotlin', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/kotlin/androidDebugResourceAccessors', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/debug/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/debug/kotlin', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/generated/compose/resourceGenerator/kotlin/androidMainResourceAccessors', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/main/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/main/kotlin', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/main/java', not found
+file or directory '/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/debug/java', not found
+Using Kotlin/JVM incremental compilation
+[KOTLIN] Kotlin compilation 'jdkHome' argument: /Users/anis/Library/Java/JavaVirtualMachines/corretto-18.0.2/Contents/Home
+Options for KOTLIN DAEMON: IncrementalCompilationOptions(super=CompilationOptions(compilerMode=INCREMENTAL_COMPILER, targetPlatform=JVM, reportCategories=[0, 3], reportSeverity=2, requestedCompilationResults=[0], kotlinScriptExtensions=[]), sourceChanges=org.jetbrains.kotlin.buildtools.api.SourcesChanges$Unknown@3bd53784, classpathChanges=NotAvailableForNonIncrementalRun, workingDir=/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/kotlin/compileDebugKotlinAndroid/cacheable, multiModuleICSettings=MultiModuleICSettings(buildHistoryFile=/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/kotlin/compileDebugKotlinAndroid/local-state/build-history.bin, useModuleDetection=true), icFeatures=IncrementalCompilationFeatures(usePreciseJavaTracking=true, withAbiSnapshot=false, preciseCompilationResultsBackup=true, keepIncrementalCompilationCachesInMemory=true, enableUnsafeIncrementalCompilationForMultiplatform=false, enableMonotonousIncrementalCompileSetExpansion=true), outputFiles=[/Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/tmp/kotlin-classes/debug, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/kotlin/compileDebugKotlinAndroid/cacheable, /Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/build/kotlin/compileDebugKotlinAndroid/local-state])
+e: file:///Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/network/api/SixtApiImpl.kt:41:21 Unresolved reference 'UnresolvedAddressException'.
+e: file:///Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/network/api/SixtApiImpl.kt:68:21 Unresolved reference 'UnresolvedAddressException'.
+e: file:///Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/network/api/SixtApiImpl.kt:95:21 Unresolved reference 'UnresolvedAddressException'.
+e: file:///Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/network/api/SixtApiImpl.kt:126:21 Unresolved reference 'UnresolvedAddressException'.
+e: file:///Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/network/api/SixtApiImpl.kt:158:21 Unresolved reference 'UnresolvedAddressException'.
+e: file:///Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/network/api/SixtApiImpl.kt:190:21 Unresolved reference 'UnresolvedAddressException'.
+e: file:///Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/network/api/SixtApiImpl.kt:219:21 Unresolved reference 'UnresolvedAddressException'.
+e: file:///Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/network/api/SixtApiImpl.kt:248:21 Unresolved reference 'UnresolvedAddressException'.
+e: file:///Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/network/api/SixtApiImpl.kt:277:21 Unresolved reference 'UnresolvedAddressException'.
+e: file:///Users/anis/Desktop/hackatum-sixt-ridergo/composeApp/src/commonMain/kotlin/network/api/SixtApiImpl.kt:306:21 Unresolved reference 'UnresolvedAddressException'.
+Finished executing kotlin compiler using DAEMON strategy
+Build d66ffeee-f8ad-4e67-b5e9-477070fbdb2b is closed
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':composeApp:compileDebugKotlinAndroid'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 2s
+23 actionable tasks: 2 executed, 21 up-to-date
+Watched directory hierarchies: [/Users/anis/Desktop/hackatum-sixt-ridergo]
+Configuration cache entry reused.
