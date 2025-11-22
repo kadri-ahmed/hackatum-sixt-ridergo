@@ -56,13 +56,14 @@ import dto.Price
 import dto.ProtectionIncluded
 import dto.ProtectionPackageDto
 import dto.ProtectionPackagePrice
+import org.koin.core.annotation.KoinExperimentalAPI
 import ui.common.ErrorView
 import ui.common.LoadingIndicator
 import ui.common.SixtPrimaryButton
 import ui.state.ProtectionUiState
 import ui.theme.SixtOrange
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, KoinExperimentalAPI::class)
 @Composable
 fun ProtectionScreen(
     viewModel: ProtectionViewModel = koinViewModel(),

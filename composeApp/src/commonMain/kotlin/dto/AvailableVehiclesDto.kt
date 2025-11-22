@@ -62,6 +62,13 @@ data class VehicleCost(
 )
 
 @Serializable
+data class UpsellReason(
+    val title: String,
+    val description: String? = null,
+    val iconUrl: String? = null
+)
+
+@Serializable
 data class Vehicle(
     val id: String,
     val brand: String,
@@ -81,7 +88,7 @@ data class Vehicle(
     val attributes: List<VehicleAttribute>,
     val vehicleStatus: String,
     val vehicleCost: VehicleCost,
-    val upsellReasons: List<String>
+    val upsellReasons: List<UpsellReason>
 )
 
 @Serializable

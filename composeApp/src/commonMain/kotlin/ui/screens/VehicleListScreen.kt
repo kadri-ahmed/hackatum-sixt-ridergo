@@ -43,6 +43,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil3.compose.AsyncImage
 import dto.Deal
 import dto.Price
 import dto.Pricing
@@ -56,10 +57,11 @@ import ui.common.SixtPrimaryButton
 import ui.state.VehicleListUiState
 import ui.theme.SixtOrange
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.annotation.KoinExperimentalAPI
 
 import viewmodels.VehicleListViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, KoinExperimentalAPI::class)
 @Composable
 fun VehicleListScreen(
     viewModel: viewmodels.VehicleListViewModel = koinViewModel(),
@@ -202,15 +204,27 @@ fun VehicleCard(deal: Deal, onSelect: () -> Unit) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Vehicle Image Placeholder (In real app, use AsyncImage)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(150.dp)
-                    .background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(8.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Vehicle Image", color = Color.Gray)
+            // Vehicle Image
+            if (deal.vehicle.images.isNotEmpty()) {
+                AsyncImage(
+                    model = deal.vehicle.images.first(),
+                    contentDescription = "${deal.vehicle.brand} ${deal.vehicle.model}",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp)
+                        .background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(8.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("No Image Available", color = Color.Gray)
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -242,7 +256,7 @@ fun VehicleCard(deal: Deal, onSelect: () -> Unit) {
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = reason,
+                                text = reason.title,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface
                             )

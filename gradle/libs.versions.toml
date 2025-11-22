@@ -19,8 +19,11 @@ extended-icons-version = "1.7.3"
 material3Version = "1.9.0"
 koin = "3.6.0-Beta4"
 koin-compose = "1.2.0-Beta4"
-[libraries]
+coil3 = "3.0.0-rc02"
 
+[libraries]
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil3" }
+coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor", version.ref = "coil3" }
 
 androidx-compose-material3 = {module = "org.jetbrains.compose.material3:material3", version.ref = "material3Version" }
 androidx-compose-material-extended-icons = {module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "extended-icons-version" }

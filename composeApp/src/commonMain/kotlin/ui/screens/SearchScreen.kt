@@ -41,9 +41,11 @@ import ui.common.SixtInput
 import ui.common.SixtPrimaryButton
 import ui.theme.SixtOrange
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.annotation.KoinExperimentalAPI
 import viewmodels.SearchViewModel
 
 
+@OptIn(KoinExperimentalAPI::class)
 @Composable
 fun SearchScreen(
     viewModel: viewmodels.SearchViewModel = koinViewModel(),

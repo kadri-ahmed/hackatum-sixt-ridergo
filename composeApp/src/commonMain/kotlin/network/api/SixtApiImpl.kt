@@ -37,13 +37,22 @@ class SixtApiImpl(private val client: HttpClient) : SixtApi {
                 408 -> Result.Error(NetworkError.REQUEST_TIMEOUT)
                 413 -> Result.Error(NetworkError.PAYLOAD_TOO_LARGE)
                 in 500..599 -> Result.Error(NetworkError.SERVER_ERROR)
-                else -> Result.Error(NetworkError.UNKNOWN)
+                else -> {
+                    println("DEBUG: getAvailableVehicles failed with status: ${response.status.value}")
+                    println("DEBUG: Response body: ${response.bodyAsText()}")
+                    Result.Error(NetworkError.UNKNOWN)
+                }
             }
         } catch (e: UnresolvedAddressException) {
+            println("DEBUG: getAvailableVehicles failed: No Internet")
             Result.Error(NetworkError.NO_INTERNET)
         } catch (e: SerializationException) {
+            println("DEBUG: getAvailableVehicles failed: Serialization Exception: ${e.message}")
+            e.printStackTrace()
             Result.Error(NetworkError.SERIALIZATION)
         } catch (e: Exception) {
+            println("DEBUG: getAvailableVehicles failed: Unknown Exception: ${e.message}")
+            e.printStackTrace()
             Result.Error(NetworkError.UNKNOWN)
         }
     }

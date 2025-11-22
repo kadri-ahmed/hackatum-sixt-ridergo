@@ -49,10 +49,12 @@ kotlin {
 
             implementation(libs.androidx.navigation3.ui)
             implementation(libs.androidx.compose.material3)
-            implementation(libs.androidx.compose.material.extended.icons)
-            implementation(libs.koin.core)
+            implementation(compose.materialIconsExtended)
+            implementation(libs.coil.compose)
+//            implementation(libs.coil.network.ktor)
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
+            implementation(libs.koin.core)
         }
 
         iosMain.dependencies {

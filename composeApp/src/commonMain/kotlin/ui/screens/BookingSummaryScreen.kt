@@ -47,13 +47,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.annotation.KoinExperimentalAPI
 import ui.common.ErrorView
 import ui.common.LoadingIndicator
 import ui.theme.SixtOrange
 import viewmodels.BookingSummaryViewModel
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, KoinExperimentalAPI::class)
 @Composable
 fun BookingSummaryScreen(
     viewModel: BookingSummaryViewModel = koinViewModel(),
