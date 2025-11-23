@@ -11,4 +11,5 @@ actual val platformModule: Module = module {
         val sharedPrefs = context.getSharedPreferences("ridergo_settings", android.content.Context.MODE_PRIVATE)
         com.russhwolf.settings.SharedPreferencesSettings(sharedPrefs)
     }
+    single<repositories.MapboxAutocompleter> { repositories.AndroidMapboxAutocompleter() }
 }

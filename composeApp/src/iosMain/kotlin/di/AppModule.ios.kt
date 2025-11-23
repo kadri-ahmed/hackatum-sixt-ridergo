@@ -7,4 +7,5 @@ import org.koin.dsl.module
 actual val platformModule: Module = module {
     single { Darwin.create() }
     single<com.russhwolf.settings.Settings> { com.russhwolf.settings.NSUserDefaultsSettings(platform.Foundation.NSUserDefaults.standardUserDefaults) }
+    single<repositories.MapboxAutocompleter> { repositories.IosMapboxAutocompleter() }
 }
