@@ -19,7 +19,8 @@ class ChatViewModel(
     private val chatRepository: ChatRepository,
     private val storage: utils.Storage,
     private val vehiclesRepository: repositories.VehiclesRepository,
-    private val bookingFlowViewModel: BookingFlowViewModel
+    private val bookingFlowViewModel: BookingFlowViewModel,
+    private val userProfileRepository: repositories.UserProfileRepository
 ) : ViewModel() {
 
     private val _messages = MutableStateFlow<List<ChatMessage>>(
@@ -28,6 +29,9 @@ class ChatViewModel(
         )
     )
     val messages: StateFlow<List<ChatMessage>> = _messages.asStateFlow()
+    
+    private val _isProfileLoaded = MutableStateFlow(false)
+    val isProfileLoaded: StateFlow<Boolean> = _isProfileLoaded.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -37,8 +41,102 @@ class ChatViewModel(
 
     // Track user context across conversation
     private var userContext = UserContext()
+    
+    // User profile loaded from booking history
+    private var userProfile: models.UserProfile? = null
 
     private var availableVehicles: List<dto.Deal> = emptyList()
+    
+    init {
+        // Load user profile and initialize context when chat opens
+        loadUserProfile()
+    }
+    
+    /**
+     * Load user profile from booking history to personalize responses
+     */
+    private fun loadUserProfile() {
+        viewModelScope.launch {
+            try {
+                userProfile = userProfileRepository.getUserProfile()
+                
+                // Initialize user context from profile preferences
+                userProfile?.let { profile ->
+                    // Only use profile if user has consented and has enough data
+                    if (profile.privacyConsent != models.PrivacyConsent.NONE && profile.hasEnoughData()) {
+                        // Set typical traveler count if available
+                        profile.typicalTravelerCount?.let { count ->
+                            userContext = userContext.copy(travelerCount = count)
+                        }
+                        
+                        // Set most common trip purpose if available
+                        profile.commonTripPurposes.firstOrNull()?.let { purpose ->
+                            userContext = userContext.copy(tripPurpose = purpose)
+                        }
+                        
+                        // Add preferences from profile
+                        val preferences = mutableListOf<String>()
+                        if (profile.preferredVehicleTypes.isNotEmpty()) {
+                            preferences.add("prefers ${profile.preferredVehicleTypes.first()} vehicles")
+                        }
+                        if (profile.preferredFuelTypes.contains("Electric") || profile.preferredFuelTypes.contains("Hybrid")) {
+                            preferences.add("eco-friendly")
+                        }
+                        if (profile.preferredBrands.isNotEmpty()) {
+                            preferences.add("prefers ${profile.preferredBrands.first()} brand")
+                        }
+                        
+                        if (preferences.isNotEmpty()) {
+                            userContext = userContext.copy(preferences = preferences)
+                        }
+                        
+                        // Update greeting message to be more personalized
+                        val personalizedGreeting = buildPersonalizedGreeting(profile)
+                        if (personalizedGreeting != null) {
+                            _messages.value = listOf(
+                                ChatMessage(personalizedGreeting, isUser = false)
+                            )
+                        }
+                    }
+                }
+                _isProfileLoaded.value = true
+            } catch (e: Exception) {
+                // Silently fail - profile loading is optional
+                _isProfileLoaded.value = true
+            }
+        }
+    }
+    
+    /**
+     * Build a personalized greeting based on user profile
+     */
+    private fun buildPersonalizedGreeting(profile: models.UserProfile): String? {
+        val parts = mutableListOf<String>()
+        
+        // Add personalized elements
+        if (profile.preferredBrands.isNotEmpty()) {
+            parts.add("I see you've rented ${profile.preferredBrands.first()} vehicles before")
+        } else if (profile.preferredVehicleTypes.isNotEmpty()) {
+            parts.add("I notice you prefer ${profile.preferredVehicleTypes.first()} vehicles")
+        }
+        
+        if (profile.commonTripPurposes.isNotEmpty()) {
+            val purpose = profile.commonTripPurposes.first()
+            val purposeText = when (purpose) {
+                models.TripPurpose.BUSINESS -> "business trips"
+                models.TripPurpose.VACATION -> "vacations"
+                models.TripPurpose.FAMILY -> "family trips"
+                models.TripPurpose.UNKNOWN -> "trips"
+            }
+            parts.add("you often travel for $purposeText")
+        }
+        
+        return if (parts.isNotEmpty()) {
+            "Hello! ${parts.joinToString(" and ")}. How can I help you find the perfect vehicle today?"
+        } else {
+            null // Use default greeting
+        }
+    }
 
     fun sendMessage(text: String) {
         if (text.isBlank() || _isLoading.value) return
@@ -77,17 +175,20 @@ class ChatViewModel(
                     emptyList()
                 }
 
-                // Generate recommendations using the engine
+                // Generate recommendations using the engine with user profile
                 val destinationContext = userContext.toDestinationContext()
-                val recommendationEngine = VehicleRecommendationEngine(destinationContext)
+                val recommendationEngine = VehicleRecommendationEngine(
+                    destinationContext = destinationContext,
+                    userProfile = userProfile
+                )
                 val scoredDeals = if (availableDeals.isNotEmpty()) {
                     recommendationEngine.scoreAndRankDeals(availableDeals)
                 } else {
                     emptyList()
                 }
 
-                // Build enhanced system prompt
-                val systemPrompt = buildSystemPrompt(userContext, scoredDeals)
+                // Build enhanced system prompt with user profile context
+                val systemPrompt = buildSystemPrompt(userContext, scoredDeals, userProfile)
 
                 val systemMessage = GroqMessage(
                     role = "system",
@@ -169,11 +270,12 @@ class ChatViewModel(
     }
 
     /**
-     * Build enhanced system prompt with user context and recommendations
+     * Build enhanced system prompt with user context, profile, and recommendations
      */
     private fun buildSystemPrompt(
         context: UserContext,
-        scoredDeals: List<recommendations.ScoredDeal>
+        scoredDeals: List<recommendations.ScoredDeal>,
+        profile: models.UserProfile? = null
     ): String {
         val basePrompt = StringBuilder()
         basePrompt.append("You are a helpful and friendly assistant for RiderGo, a premium car rental service. ")
@@ -209,6 +311,50 @@ class ChatViewModel(
                 basePrompt.append("- $info\n")
             }
             basePrompt.append("\n")
+        }
+        
+        // Add user preferences from booking history
+        profile?.let { userProfile ->
+            val profileInfo = mutableListOf<String>()
+            
+            if (userProfile.preferredBrands.isNotEmpty()) {
+                profileInfo.add("Based on past bookings, user prefers: ${userProfile.preferredBrands.joinToString(", ")} vehicles")
+            }
+            
+            if (userProfile.preferredVehicleTypes.isNotEmpty()) {
+                profileInfo.add("User typically rents: ${userProfile.preferredVehicleTypes.joinToString(", ")}")
+            }
+            
+            if (userProfile.preferredFuelTypes.isNotEmpty()) {
+                profileInfo.add("User prefers: ${userProfile.preferredFuelTypes.joinToString(", ")} fuel types")
+            }
+            
+            if (userProfile.averageBudgetRange != null) {
+                val budget = userProfile.averageBudgetRange
+                profileInfo.add("User's typical budget range: €${budget.min} - €${budget.max}")
+            }
+            
+            if (userProfile.typicalTravelerCount != null) {
+                profileInfo.add("User typically travels with ${userProfile.typicalTravelerCount} ${if (userProfile.typicalTravelerCount == 1) "person" else "people"}")
+            }
+            
+            if (userProfile.commonTripPurposes.isNotEmpty()) {
+                val purposes = userProfile.commonTripPurposes.map { it.name.lowercase() }.joinToString(", ")
+                profileInfo.add("User's common trip purposes: $purposes")
+            }
+            
+            if (userProfile.preferredLocations.isNotEmpty()) {
+                profileInfo.add("User frequently rents in: ${userProfile.preferredLocations.joinToString(", ")}")
+            }
+            
+            if (profileInfo.isNotEmpty()) {
+                basePrompt.append("User preferences (from booking history):\n")
+                profileInfo.forEach { info ->
+                    basePrompt.append("- $info\n")
+                }
+                basePrompt.append("\nUse this information to provide more personalized recommendations. ")
+                basePrompt.append("When suggesting vehicles, mention if they match the user's historical preferences.\n\n")
+            }
         }
 
         // Check if we need more information

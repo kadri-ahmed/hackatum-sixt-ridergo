@@ -16,13 +16,25 @@ import utils.Result
 class VehicleListViewModel(
     private val vehiclesRepository: VehiclesRepository,
     private val bookingFlowViewModel: BookingFlowViewModel,
-    private val destinationContext: DestinationContext? = null
+    private val destinationContext: DestinationContext? = null,
+    private val userProfileRepository: repositories.UserProfileRepository? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<VehicleListUiState>(VehicleListUiState.Loading)
     val uiState: StateFlow<VehicleListUiState> = _uiState.asStateFlow()
 
-    private val recommendationEngine = VehicleRecommendationEngine(destinationContext)
+    private var recommendationEngine: VehicleRecommendationEngine? = null
+    
+    init {
+        // Initialize recommendation engine with user profile
+        viewModelScope.launch {
+            val userProfile = userProfileRepository?.getUserProfile()
+            recommendationEngine = VehicleRecommendationEngine(
+                destinationContext = destinationContext,
+                userProfile = userProfile
+            )
+        }
+    }
 
     // In a real app, we would get the bookingId from SavedStateHandle or Navigation args
     // For now, we'll accept it as a parameter or use a hardcoded one for testing if needed
@@ -39,9 +51,17 @@ class VehicleListViewModel(
                     if (result.data.deals.isEmpty()) {
                         _uiState.value = VehicleListUiState.Empty
                     } else {
+                        // Ensure recommendation engine is initialized
+                        val engine = recommendationEngine ?: run {
+                            val userProfile = userProfileRepository?.getUserProfile()
+                            VehicleRecommendationEngine(destinationContext, userProfile).also {
+                                recommendationEngine = it
+                            }
+                        }
+                        
                         // Score and rank deals using recommendation engine
-                        val scoredDeals = recommendationEngine.scoreAndRankDeals(result.data.deals)
-                        val recommendationMessage = recommendationEngine.generateRecommendationMessage(
+                        val scoredDeals = engine.scoreAndRankDeals(result.data.deals)
+                        val recommendationMessage = engine.generateRecommendationMessage(
                             scoredDeals.take(3)
                         )
                         

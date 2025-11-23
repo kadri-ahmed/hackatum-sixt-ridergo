@@ -32,10 +32,12 @@ data class ScoredDeal(
  * - Vehicle features matching user needs (passengers, bags, fuel type)
  * - Context matching (trip purpose, destination type)
  * - Vehicle quality indicators (new car, luxury, recommended flag)
+ * - User preferences (from past bookings and behavior)
  * - Availability and status
  */
 class VehicleRecommendationEngine(
-    private val destinationContext: DestinationContext? = null
+    private val destinationContext: DestinationContext? = null,
+    private val userProfile: models.UserProfile? = null
 ) {
     
     /**
@@ -57,32 +59,101 @@ class VehicleRecommendationEngine(
         var score = 0.0
         val reasons = mutableListOf<RecommendationReason>()
         
-        // 1. Price Value Score (0-30 points)
+        // 1. Price Value Score (0-25 points)
         val priceScore = calculatePriceScore(deal.pricing)
         score += priceScore.first
         reasons.addAll(priceScore.second)
         
-        // 2. Feature Matching Score (0-25 points)
+        // 2. Feature Matching Score (0-20 points)
         val featureScore = calculateFeatureMatchingScore(deal.vehicle)
         score += featureScore.first
         reasons.addAll(featureScore.second)
         
-        // 3. Context Matching Score (0-20 points)
+        // 3. Context Matching Score (0-15 points)
         val contextScore = calculateContextMatchingScore(deal)
         score += contextScore.first
         reasons.addAll(contextScore.second)
         
-        // 4. Quality Indicators Score (0-15 points)
+        // 4. User Preferences Score (0-20 points) - NEW!
+        val preferencesScore = calculateUserPreferencesScore(deal)
+        score += preferencesScore.first
+        reasons.addAll(preferencesScore.second)
+        
+        // 5. Quality Indicators Score (0-10 points)
         val qualityScore = calculateQualityScore(deal.vehicle)
         score += qualityScore.first
         reasons.addAll(qualityScore.second)
         
-        // 5. Deal Attractiveness Score (0-10 points)
+        // 6. Deal Attractiveness Score (0-10 points)
         val dealScore = calculateDealAttractivenessScore(deal)
         score += dealScore.first
         reasons.addAll(dealScore.second)
         
         return Pair(score.coerceIn(0.0, 100.0), reasons.sortedByDescending { it.priority })
+    }
+    
+    /**
+     * Calculate score based on user's historical preferences
+     * Privacy-respecting: Only uses anonymized aggregated data
+     */
+    private fun calculateUserPreferencesScore(deal: Deal): Pair<Double, List<RecommendationReason>> {
+        var score = 0.0
+        val reasons = mutableListOf<RecommendationReason>()
+        
+        val profile = userProfile ?: return Pair(score, reasons)
+        
+        // Brand preference (0-7 points)
+        if (profile.preferredBrands.contains(deal.vehicle.brand)) {
+            score += 7.0
+            reasons.add(
+                RecommendationReason(
+                    title = "Your Preferred Brand",
+                    description = "You've rented ${deal.vehicle.brand} vehicles before",
+                    priority = 4
+                )
+            )
+        }
+        
+        // Vehicle type preference (0-6 points)
+        if (profile.preferredVehicleTypes.contains(deal.vehicle.groupType)) {
+            score += 6.0
+            reasons.add(
+                RecommendationReason(
+                    title = "Matches Your Style",
+                    description = "You prefer ${deal.vehicle.groupType} vehicles",
+                    priority = 3
+                )
+            )
+        }
+        
+        // Fuel type preference (0-4 points)
+        if (profile.preferredFuelTypes.contains(deal.vehicle.fuelType)) {
+            score += 4.0
+            reasons.add(
+                RecommendationReason(
+                    title = "Your Preferred Fuel Type",
+                    description = "You often choose ${deal.vehicle.fuelType} vehicles",
+                    priority = 2
+                )
+            )
+        }
+        
+        // Budget range matching (0-3 points)
+        profile.averageBudgetRange?.let { budgetRange ->
+            val price = deal.pricing.totalPrice.amount
+            if (price >= budgetRange.min && price <= budgetRange.max) {
+                score += 3.0
+                reasons.add(
+                    RecommendationReason(
+                        title = "Within Your Budget Range",
+                        description = "Matches your typical spending",
+                        priority = 3
+                    )
+                )
+            }
+        }
+        
+        return Pair(score, reasons)
     }
     
     /**

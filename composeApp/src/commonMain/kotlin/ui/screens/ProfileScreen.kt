@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -48,7 +49,8 @@ fun ProfileScreen(
     popBackStack: () -> Unit,
     popUpToLogin: () -> Unit,
     isDarkTheme: Boolean,
-    onToggleTheme: () -> Unit
+    onToggleTheme: () -> Unit,
+    navigateToBookingHistory: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -109,6 +111,22 @@ fun ProfileScreen(
                 )
             }
             
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Booking History
+            Row(
+                modifier = Modifier.fillMaxWidth().clickable { navigateToBookingHistory() },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Booking History", style = MaterialTheme.typography.bodyLarge)
+                Icon(
+                    imageVector = Icons.Default.History,
+                    contentDescription = "Booking History",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
             
             // Account Details

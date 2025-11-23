@@ -20,6 +20,7 @@ sealed class Screen(val route: String) {
     object Protection : Screen("protection")
     object BookingSummary : Screen("booking_summary")
     object TripDetails : Screen("trip_details")
+    object BookingHistory : Screen("booking_history")
 }
 
 @Composable
@@ -77,7 +78,8 @@ fun NavGraph(
                 popBackStack = { navController.popBackStack() },
                 popUpToLogin = { },
                 isDarkTheme = isDarkTheme,
-                onToggleTheme = onToggleTheme
+                onToggleTheme = onToggleTheme,
+                navigateToBookingHistory = { navController.navigate(Screen.BookingHistory.route) }
             )
         }
         composable(Screen.VehicleDetail.route) {
@@ -107,6 +109,11 @@ fun NavGraph(
                         popUpTo(Screen.Home.route) { inclusive = true }
                     }
                 }
+            )
+        }
+        composable(Screen.BookingHistory.route) {
+            ui.screens.BookingHistoryScreen(
+                onBack = { navController.popBackStack() }
             )
         }
     }

@@ -25,12 +25,16 @@ val appModule = module {
     single<BookingRepository> { BookingRepositoryImpl(get()) }
     single<VehiclesRepository> { VehiclesRepositoryImpl(get()) }
     single<ChatRepository> { ChatRepositoryImpl(get()) }
+    single<repositories.BookingHistoryRepository> { repositories.BookingHistoryRepositoryImpl(get()) }
+    single<repositories.UserProfileRepository> { repositories.UserProfileRepositoryImpl(get()) }
+    single<services.PersonalizationService> { services.PersonalizationService(get()) }
 
     viewModel { viewmodels.SearchViewModel(get(), get(), get()) }
-    viewModel { viewmodels.VehicleListViewModel(get(), get()) }
+    viewModel { viewmodels.VehicleListViewModel(get(), get(), null, get()) }
     viewModel { viewmodels.ProtectionViewModel(get(), get()) }
-    viewModel { viewmodels.BookingSummaryViewModel(get(), get()) }
-    viewModel { viewmodels.ChatViewModel(get(), get(), get(), get()) }
+    viewModel { viewmodels.BookingSummaryViewModel(get(), get(), get(), get()) }
+    viewModel { viewmodels.BookingHistoryViewModel(get(), get()) }
+    viewModel { viewmodels.ChatViewModel(get(), get(), get(), get(), get()) }
     
     // Shared state for booking flow
     // Shared state for booking flow

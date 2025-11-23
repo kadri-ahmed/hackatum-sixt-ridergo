@@ -38,6 +38,12 @@ kotlin {
 
     sourceSets {
         val ktorVersion: String by rootProject.extra
+        
+        val commonMain by getting {
+            dependencies {
+                implementation(libs.kotlinx.datetime)
+            }
+        }
 
         androidMain.dependencies {
             implementation(compose.preview)

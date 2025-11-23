@@ -13,7 +13,9 @@ import utils.Result
 
 class BookingSummaryViewModel(
     private val bookingRepository: BookingRepository,
-    private val bookingFlowViewModel: BookingFlowViewModel
+    private val bookingFlowViewModel: BookingFlowViewModel,
+    private val personalizationService: services.PersonalizationService,
+    private val userProfileRepository: repositories.UserProfileRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<BookingSummaryUiState>(BookingSummaryUiState.Loading)
@@ -49,13 +51,45 @@ class BookingSummaryViewModel(
             
             when (val result = bookingRepository.completeBooking(bookingId)) {
                 is Result.Success -> {
-                    _uiState.value = BookingSummaryUiState.Success(result.data)
+                    val completedBooking = result.data
+                    _uiState.value = BookingSummaryUiState.Success(completedBooking)
+                    
+                    // Update user profile with completed booking (privacy-respecting)
+                    updateUserProfileFromBooking(completedBooking)
+                    
                     onConfirmed()
                 }
                 is Result.Error -> {
                     val errorMessage = mapError(result.error)
                     _uiState.value = BookingSummaryUiState.Error(errorMessage)
                 }
+            }
+        }
+    }
+    
+    /**
+     * Update user profile from completed booking
+     * Only stores anonymized, aggregated data respecting privacy settings
+     */
+    private fun updateUserProfileFromBooking(booking: dto.BookingDto) {
+        viewModelScope.launch {
+            try {
+                val currentProfile = userProfileRepository.getUserProfile()
+                
+                // Only update if user has consented to data collection
+                if (currentProfile.privacyConsent != models.PrivacyConsent.NONE) {
+                    // Get destination context if available (from BookingFlowViewModel or elsewhere)
+                    val updatedProfile = personalizationService.updateProfileFromBooking(
+                        booking = booking,
+                        tripContext = null, // Could be passed from context
+                        currentProfile = currentProfile
+                    )
+                    
+                    userProfileRepository.saveUserProfile(updatedProfile)
+                }
+            } catch (e: Exception) {
+                // Silently fail - personalization is not critical
+                println("Failed to update user profile: ${e.message}")
             }
         }
     }
