@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -53,7 +54,8 @@ data class ChatMessage(
 @Composable
 fun ChatScreen(
     viewModel: ChatViewModel = koinViewModel(),
-    onVehicleSelect: (Deal) -> Unit
+    onVehicleSelect: (Deal) -> Unit,
+    onBack: () -> Unit
 ) {
     var messageText by remember { mutableStateOf("") }
     val messages by viewModel.messages.collectAsState()
@@ -62,6 +64,24 @@ fun ChatScreen(
     var selectedVehicle by remember { mutableStateOf<Deal?>(null) }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        // Header
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back"
+                )
+            }
+            Text(
+                text = "AI Assistant",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+
         LazyColumn(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(12.dp)

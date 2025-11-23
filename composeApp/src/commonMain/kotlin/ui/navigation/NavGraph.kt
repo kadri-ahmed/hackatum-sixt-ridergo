@@ -78,7 +78,8 @@ fun NavGraph(
                 onVehicleSelect = { deal ->
                     onVehicleSelect(deal)
                     navController.navigate(Screen.VehicleDetail.route)
-                }
+                },
+                onBack = { navController.popBackStack() }
             )
         }
         composable(Screen.Profile.route) {
