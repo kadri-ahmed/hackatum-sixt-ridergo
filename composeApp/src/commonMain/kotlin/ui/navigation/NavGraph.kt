@@ -17,11 +17,12 @@ sealed class Screen(val route: String) {
     object Chat : Screen("chat")
     object Profile : Screen("profile")
     object VehicleDetail : Screen("vehicle_detail")
-    object Protection : Screen("protection")
+    // object Protection : Screen("protection")
     object BookingSummary : Screen("booking_summary")
     object TripDetails : Screen("trip_details")
 }
 
+@androidx.compose.foundation.ExperimentalFoundationApi
 @Composable
 fun NavGraph(
     navController: NavHostController,
@@ -86,11 +87,13 @@ fun NavGraph(
                     deal = selectedVehicle,
                     onBack = { navController.popBackStack() },
                     onUpgrade = { deal ->
-                        navController.navigate(Screen.Protection.route)
+                        navController.navigate(Screen.BookingSummary.route)
                     }
                 )
             }
         }
+        // Protection Screen removed as it's now integrated into VehicleDetailScreen
+        /*
         composable(Screen.Protection.route) {
             ui.screens.ProtectionScreen(
                 onBack = { navController.popBackStack() },
@@ -99,6 +102,7 @@ fun NavGraph(
                 }
             )
         }
+        */
         composable(Screen.BookingSummary.route) {
             BookingSummaryScreen(
                 onConfirm = {

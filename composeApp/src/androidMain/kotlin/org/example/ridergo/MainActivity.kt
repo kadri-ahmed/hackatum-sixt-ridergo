@@ -14,6 +14,7 @@ import repositories.BookingRepositoryImpl
 import repositories.VehiclesRepositoryImpl
 
 class MainActivity : ComponentActivity() {
+    @androidx.compose.foundation.ExperimentalFoundationApi
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)

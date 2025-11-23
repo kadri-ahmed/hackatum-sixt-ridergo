@@ -13,6 +13,7 @@ import ui.screens.MainScreen
 import ui.theme.AppTheme
 import kotlin.random.Random
 
+@androidx.compose.foundation.ExperimentalFoundationApi
 @Composable
 fun App(bookingRepository: BookingRepository, vehiclesRepository: VehiclesRepository) {
     var isDarkTheme by remember { mutableStateOf(true) } // Default to dark
