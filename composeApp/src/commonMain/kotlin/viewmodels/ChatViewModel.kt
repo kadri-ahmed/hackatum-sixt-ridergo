@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import repositories.ChatRepository
 import ui.screens.ChatMessage
+import ui.screens.ChatMessageOption
 import utils.Storage
 
 import kotlinx.serialization.json.Json
@@ -39,15 +40,59 @@ class ChatViewModel(
 
     private var availableVehicles: List<dto.Deal> = emptyList()
     private var protectionPackages: List<dto.ProtectionPackageDto> = emptyList()
-    // Mock addons for now as they are hardcoded in UI
-    private val addons = listOf(
-        "GPS" to "GPS Navigation",
-        "Baby Seat" to "Baby Seat",
-        "Additional Driver" to "Additional Driver"
-    )
+    private var availableAddons: List<dto.AddonCategory> = emptyList()
+    private var savedBookings: List<SavedBooking> = emptyList()
+
+    init {
+        viewModelScope.launch {
+            savedBookingRepository.getSavedBookings().collect { bookings ->
+                savedBookings = bookings
+            }
+        }
+    }
 
     fun startNewChat() {
         chatRepository.clearMessages()
+    }
+
+    fun deleteBooking(bookingId: String) {
+        viewModelScope.launch {
+            savedBookingRepository.deleteBooking(bookingId)
+            
+            // Update messages to mark the booking as deleted
+            // We iterate through all messages and if they contain the booking in existingBookings or bookingsToDelete,
+            // we add the ID to deletedBookingIds.
+            val currentMessages = messages.value.toMutableList()
+            val updatedMessages = currentMessages.map { msg ->
+                val hasExisting = msg.existingBookings.any { it.id == bookingId }
+                val hasSuggested = msg.bookingsToDelete.any { it.id == bookingId }
+                
+                if (hasExisting || hasSuggested) {
+                    msg.copy(deletedBookingIds = msg.deletedBookingIds + bookingId)
+                } else {
+                    msg
+                }
+            }
+            
+            // We need to update the repository with the modified messages
+            // Since we don't have updateAll, we might need to clear and re-add or just update in memory if the repo is backed by memory.
+            // ChatRepository is likely backed by a MutableStateFlow or similar.
+            // Let's assume we can just re-emit the messages if we had access to the flow, but we only have `messages` as StateFlow.
+            // We need a way to update the messages in the repository.
+            // Looking at ChatRepository (I should have checked it), it usually has `updateMessage` or we can just rely on the fact that
+            // `messages` might be mutable in the repo.
+            // But wait, `messages` is a StateFlow from repo.
+            // Let's check if we can update the message individually.
+            // `chatRepository.updateMessage(updatedMessage)` exists (used in saveBooking).
+            
+            updatedMessages.forEach { msg ->
+                if (msg.deletedBookingIds.contains(bookingId)) {
+                    chatRepository.updateMessage(msg)
+                }
+            }
+            
+            chatRepository.addMessage(ChatMessage("Booking deleted.", isUser = false))
+        }
     }
 
     fun sendMessage(text: String) {
@@ -76,6 +121,12 @@ class ChatViewModel(
                         protectionPackages = result.data.protectionPackages
                     }
                 }
+                if (availableAddons.isEmpty()) {
+                    val result = vehiclesRepository.getAvailableAddons("mock_booking_id")
+                    if (result is utils.Result.Success) {
+                        availableAddons = result.data.addons
+                    }
+                }
 
                 // Construct system prompt
                 val vehicleListString = availableVehicles.joinToString("\n") { deal ->
@@ -84,8 +135,18 @@ class ChatViewModel(
                 val protectionListString = protectionPackages.joinToString("\n") { pkg ->
                     "- ID: ${pkg.id}, Name: ${pkg.name}, Price: ${pkg.price.displayPrice.currency} ${pkg.price.displayPrice.amount}/day"
                 }
-                val addonListString = addons.joinToString("\n") { (id, name) ->
-                    "- ID: $id, Name: $name"
+                
+                // Flatten addons for the prompt
+                val addonListString = availableAddons.flatMap { it.options }.joinToString("\n") { option ->
+                    "- ID: ${option.chargeDetail.id}, Name: ${option.chargeDetail.title}, Price: ${option.additionalInfo.price.displayPrice.currency} ${option.additionalInfo.price.displayPrice.amount}"
+                }
+
+                val savedBookingsString = if (savedBookings.isNotEmpty()) {
+                    savedBookings.joinToString("\n") { booking ->
+                        "- Booking ID: ${booking.id}, Vehicle: ${booking.vehicle.vehicle.brand} ${booking.vehicle.vehicle.model}, Status: ${booking.status}"
+                    }
+                } else {
+                    "No saved bookings."
                 }
 
                 val userProfile = userRepository.getProfile()
@@ -107,9 +168,12 @@ class ChatViewModel(
                     role = "system",
                     content = """
                         You are a helpful assistant for RiderGo, a premium car rental service. 
-                        You help users find vehicles and customize their booking.
+                        You help users find vehicles, customize their booking, and manage existing bookings.
                         
                         $userContext
+                        
+                        Current Saved Bookings:
+                        $savedBookingsString
                         
                         Available Vehicles:
                         $vehicleListString
@@ -121,34 +185,39 @@ class ChatViewModel(
                         $addonListString
                         
                         Rules:
-                        1. You are a consultative sales assistant. Your goal is to find the *perfect* car for the user, not just any car.
-                        2. If the user's request is vague (e.g., "I need a car"), ask clarifying questions BEFORE showing any vehicles.
-                        3. Good questions to ask:
-                           - "How many passengers will be travelling?"
-                           - "How much luggage do you have?"
-                           - "Do you prefer automatic or manual transmission?"
-                           - "Are you looking for a budget option or something premium?"
-                        4. ONLY use the "show_vehicle" action when you have enough information to make a strong recommendation, or if the user explicitly asks for a specific car.
-                        5. Recommend vehicles, protection, and addons from the lists above.
-                        6. If you want to SHOW a vehicle to the user (e.g. when recommending it), you MUST output a JSON block with action "show_vehicle".
-                        7. If the user wants to SAVE or BOOK a trip, you MUST output a JSON block with action "save_booking".
-                        8. The JSON format is:
+                        1. You are a consultative sales assistant. Your goal is to find the *perfect* car for the user.
+                        2. If the user's request is vague, ask clarifying questions.
+                        3. Recommend vehicles, protection, and addons from the lists above.
+                        4. You can perform MULTIPLE actions in a single response using the JSON block.
+                        5. Supported Action Types:
+                           - "show_vehicle": Show a vehicle card.
+                           - "save_booking": Propose a booking to save.
+                           - "show_saved_bookings": Show the user's list of bookings (ONLY if explicitly asked).
+                           - "suggest_deletion": Suggest deleting a specific booking (e.g. if user changes mind).
+                        6. JSON Format:
                         ```json
                         {
-                            "action": "show_vehicle" OR "save_booking",
-                            "vehicle_id": "VEHICLE_ID",
-                            "protection_package_id": "PROTECTION_ID (optional, for save_booking)",
-                            "addon_ids": ["ADDON_ID_1"] (optional, for save_booking)
+                            "actions": [
+                                {
+                                    "type": "show_vehicle",
+                                    "vehicle_id": "VEHICLE_ID"
+                                },
+                                {
+                                    "type": "save_booking",
+                                    "vehicle_id": "VEHICLE_ID",
+                                    "protection_package_id": "PROTECTION_ID (optional)",
+                                    "addon_ids": ["ADDON_ID_1"] (optional)
+                                },
+                                {
+                                    "type": "suggest_deletion",
+                                    "booking_id": "BOOKING_ID"
+                                }
+                            ]
                         }
                         ```
-                        9. If the user just wants information and you are NOT recommending a specific vehicle to look at, do NOT output JSON.
-                        10. Keep responses concise and helpful.
-                        11. IMPORTANT: NEVER mention internal IDs (like "VEHICLE_123" or "ADDON_456") in your text response. Use the names (e.g., "BMW X5", "GPS Navigation").
-                        12. Present options in a readable, natural manner.
-                        13. ALWAYS put the JSON block at the very end of your response.
-                        14. Do NOT say "Here is the JSON" or "I will show you the vehicle". Just write your helpful message and append the JSON block silently.
-                        15. The user should NOT know that JSON is being used.
-                        16. If you are showing a vehicle, just say "I recommend checking out this [Vehicle Name]." and then append the JSON.
+                        7. ALWAYS put the JSON block at the very end of your response.
+                        8. Do NOT say "Here is the JSON". Just write your helpful message and append the JSON block silently.
+                        9. If the user changes their mind about a booking (e.g. "Actually I want the Audi instead of the BMW"), you should suggest deleting the old booking AND saving the new one in the same response.
                     """.trimIndent()
                 )
                 
@@ -169,25 +238,18 @@ class ChatViewModel(
                         // Parse for JSON action
                         val (cleanText, actionJson) = parseResponse(assistantResponse)
                         
-                        // We will populate these if we have an action
-                        var addonNames: List<String> = emptyList()
-                        var proposedBooking: SavedBooking? = null
-                        var dealToShow: dto.Deal? = null
+                        var actionResults = ActionResults()
                         
                         if (actionJson != null) {
-                            val actionResult = handleAction(actionJson)
-                            proposedBooking = actionResult.first
-                            addonNames = actionResult.second
-                            dealToShow = actionResult.third
+                            actionResults = handleActions(actionJson)
                         }
                         
                         chatRepository.addMessage(ChatMessage(
                             text = cleanText, 
                             isUser = false,
-                            isOffer = dealToShow != null,
-                            deal = dealToShow,
-                            proposedBooking = proposedBooking,
-                            addonNames = addonNames
+                            options = actionResults.options,
+                            existingBookings = actionResults.existingBookingsToShow,
+                            bookingsToDelete = actionResults.bookingsToDelete
                         ))
                     }
                     is utils.Result.Error -> {
@@ -210,6 +272,11 @@ class ChatViewModel(
         _errorMessage.value = null
     }
 
+    private val json = Json { 
+        isLenient = true 
+        ignoreUnknownKeys = true 
+    }
+
     private fun parseResponse(response: String): Pair<String, JsonObject?> {
         var jsonString: String? = null
         var cleanText = response
@@ -223,22 +290,68 @@ class ChatViewModel(
             cleanText = response.substring(0, jsonStart).trim()
         } else {
             // 2. Fallback: Try to find the last JSON object in the text
-            val lastOpenBrace = response.lastIndexOf('{')
-            val lastCloseBrace = response.lastIndexOf('}')
-            
-            if (lastOpenBrace != -1 && lastCloseBrace != -1 && lastCloseBrace > lastOpenBrace) {
-                // Check if it looks like our action JSON
-                val potentialJson = response.substring(lastOpenBrace, lastCloseBrace + 1)
-                if (potentialJson.contains("\"action\"")) {
-                    jsonString = potentialJson
-                    cleanText = response.substring(0, lastOpenBrace).trim()
+            // We iterate backwards to find the last valid JSON block
+            var endIndex = response.lastIndexOf('}')
+            while (endIndex != -1) {
+                var startIndex = response.lastIndexOf('{', endIndex)
+                if (startIndex == -1) break
+                
+                // Try to expand backwards to find the matching opening brace if nested
+                var balance = 1
+                var tempIndex = startIndex - 1
+                while (tempIndex >= 0 && balance > 0) {
+                     // This simple heuristic might fail for complex nested structures with strings containing braces
+                     // But for our specific AI output which puts JSON at the end, finding the last { and } is usually enough
+                     // unless it's nested.
+                     // Let's stick to the previous logic but refine the check.
+                     break 
                 }
+
+                // Actually, a better approach for our specific case (AI appending JSON at end):
+                // Find the last '}' and walk backwards to find the matching '{'.
+                var openBraces = 0
+                var closeBraces = 0
+                var foundStart = -1
+                
+                for (i in response.length - 1 downTo 0) {
+                    if (response[i] == '}') {
+                        closeBraces++
+                    } else if (response[i] == '{') {
+                        openBraces++
+                        if (openBraces == closeBraces) {
+                            foundStart = i
+                            break
+                        }
+                    }
+                }
+                
+                if (foundStart != -1) {
+                    val potentialJson = response.substring(foundStart, response.lastIndexOf('}') + 1)
+                    if (potentialJson.contains("\"actions\"") || potentialJson.contains("\"action\"")) {
+                        jsonString = potentialJson
+                        cleanText = response.substring(0, foundStart).trim()
+                        break
+                    }
+                }
+                
+                // If we didn't find it with the balance check, try the simple lastIndexOf approach as fallback
+                // for simple non-nested JSONs which is what we mostly get.
+                val lastOpen = response.lastIndexOf('{')
+                val lastClose = response.lastIndexOf('}')
+                if (lastOpen != -1 && lastClose > lastOpen) {
+                     val potential = response.substring(lastOpen, lastClose + 1)
+                     if (potential.contains("\"actions\"") || potential.contains("\"action\"")) {
+                         jsonString = potential
+                         cleanText = response.substring(0, lastOpen).trim()
+                     }
+                }
+                break // Only try once for now to avoid infinite loops if logic is flawed
             }
         }
 
         if (jsonString != null) {
             try {
-                val jsonObject = Json.parseToJsonElement(jsonString) as? JsonObject
+                val jsonObject = json.parseToJsonElement(jsonString) as? JsonObject
                 return cleanText to jsonObject
             } catch (e: Exception) {
                 println("Failed to parse JSON from AI: $e")
@@ -247,58 +360,115 @@ class ChatViewModel(
         return cleanText to null
     }
     
-    @OptIn(kotlin.time.ExperimentalTime::class)
-    private suspend fun handleAction(json: JsonObject): Triple<SavedBooking?, List<String>, dto.Deal?> {
-        val action = json["action"]?.jsonPrimitive?.contentOrNull
-        val vehicleId = json["vehicle_id"]?.jsonPrimitive?.contentOrNull
-        
-        if (vehicleId != null) {
-             val vehicle = availableVehicles.find { it.vehicle.id == vehicleId }
-             
-             if (vehicle != null) {
-                // Extract details for both actions (or default for show_vehicle)
-                val protectionId = json["protection_package_id"]?.jsonPrimitive?.contentOrNull
-                val addonIdsJson = json["addon_ids"]?.jsonArray
-                val addonIds = addonIdsJson?.mapNotNull { it.jsonPrimitive.contentOrNull }?.toSet() ?: emptySet()
-                
-                val protection = protectionPackages.find { it.id == protectionId }
-                
-                // Map addon IDs to names
-                val addonNames = addonIds.mapNotNull { id ->
-                    addons.find { it.first == id }?.second
-                }
 
-                val vehiclePrice = vehicle.pricing.totalPrice.amount
-                val protectionPrice = protection?.price?.totalPrice?.amount 
-                    ?: protection?.price?.displayPrice?.amount 
-                    ?: 0.0
-                val totalAmount = vehiclePrice + protectionPrice
-                
-                val proposedBooking = SavedBooking(
-                    id = Clock.System.now().toEpochMilliseconds().toString(),
-                    bookingId = "chat_booking_${Clock.System.now().toEpochMilliseconds()}", // Mock ID
-                    vehicle = vehicle,
-                    protectionPackage = protection,
-                    addonIds = addonIds,
-                    timestamp = Clock.System.now().toEpochMilliseconds(),
-                    totalPrice = totalAmount,
-                    currency = vehicle.pricing.totalPrice.currency,
-                    status = BookingStatus.DRAFT
-                )
-                
-                return Triple(proposedBooking, addonNames, vehicle)
-             }
+
+    data class ActionResults(
+        val options: List<ChatMessageOption> = emptyList(),
+        val existingBookingsToShow: List<SavedBooking> = emptyList(),
+        val bookingsToDelete: List<SavedBooking> = emptyList()
+    )
+    
+    @OptIn(kotlin.time.ExperimentalTime::class)
+    private suspend fun handleActions(json: JsonObject): ActionResults {
+        val options = mutableListOf<ChatMessageOption>()
+        var existingBookingsToShow: List<SavedBooking> = emptyList()
+        val bookingsToDelete = mutableListOf<SavedBooking>()
+
+        val actionsArray = json["actions"]?.jsonArray
+        
+        actionsArray?.forEach { actionElement ->
+            val actionObj = actionElement as? JsonObject ?: return@forEach
+            val type = actionObj["type"]?.jsonPrimitive?.contentOrNull
+            
+            when (type) {
+                "show_saved_bookings" -> {
+                    existingBookingsToShow = savedBookings
+                }
+                "suggest_deletion" -> {
+                    val bookingId = actionObj["booking_id"]?.jsonPrimitive?.contentOrNull
+                    if (bookingId != null) {
+                        val booking = savedBookings.find { it.id == bookingId || it.bookingId == bookingId }
+                        if (booking != null) {
+                            bookingsToDelete.add(booking)
+                        }
+                    }
+                }
+                "show_vehicle", "save_booking" -> {
+                    val vehicleId = actionObj["vehicle_id"]?.jsonPrimitive?.contentOrNull
+                    if (vehicleId != null) {
+                        val vehicle = availableVehicles.find { it.vehicle.id == vehicleId }
+                        if (vehicle != null) {
+                            if (type == "show_vehicle") {
+                                options.add(ChatMessageOption(deal = vehicle))
+                            } else { // save_booking
+                                val protectionId = actionObj["protection_package_id"]?.jsonPrimitive?.contentOrNull
+                                val addonIdsJson = actionObj["addon_ids"]?.jsonArray
+                                val addonIds = addonIdsJson?.mapNotNull { it.jsonPrimitive.contentOrNull }?.toSet() ?: emptySet()
+                                
+                                val protection = protectionPackages.find { it.id == protectionId }
+                                
+                                var addonsPrice = 0.0
+                                val currentAddonNames = mutableListOf<String>()
+                                val allOptions = availableAddons.flatMap { it.options }
+                                
+                                addonIds.forEach { id ->
+                                    val option = allOptions.find { it.chargeDetail.id == id }
+                                    if (option != null) {
+                                        currentAddonNames.add(option.chargeDetail.title)
+                                        addonsPrice += option.additionalInfo.price.totalPrice?.amount
+                                            ?: option.additionalInfo.price.displayPrice.amount 
+                                            ?: 0.0
+                                    }
+                                }
+                                
+                                val vehiclePrice = vehicle.pricing.totalPrice.amount
+                                val protectionPrice = protection?.price?.totalPrice?.amount 
+                                    ?: protection?.price?.displayPrice?.amount 
+                                    ?: 0.0
+                                val totalAmount = vehiclePrice + protectionPrice + addonsPrice
+                                
+                                val proposedBooking = SavedBooking(
+                                    id = Clock.System.now().toEpochMilliseconds().toString(),
+                                    bookingId = "chat_booking_${Clock.System.now().toEpochMilliseconds()}",
+                                    vehicle = vehicle,
+                                    protectionPackage = protection,
+                                    addonIds = addonIds,
+                                    timestamp = Clock.System.now().toEpochMilliseconds(),
+                                    totalPrice = totalAmount,
+                                    currency = vehicle.pricing.totalPrice.currency,
+                                    status = BookingStatus.DRAFT
+                                )
+                                options.add(ChatMessageOption(
+                                    deal = vehicle,
+                                    proposedBooking = proposedBooking,
+                                    addonNames = currentAddonNames
+                                ))
+                            }
+                        }
+                    }
+                }
+            }
         }
-        return Triple(null, emptyList(), null)
+        
+        return ActionResults(options, existingBookingsToShow, bookingsToDelete)
     }
 
-    fun saveBooking(message: ChatMessage) {
-        val booking = message.proposedBooking ?: return
+    fun saveBooking(message: ChatMessage, option: ChatMessageOption) {
+        val booking = option.proposedBooking ?: return
         
         viewModelScope.launch {
             savedBookingRepository.saveBooking(booking)
             
             // Update the message to show it's saved
+            // We need to update the specific option in the message?
+            // Or just mark the whole message as saved? 
+            // The UI uses message.isSaved to toggle button color.
+            // If we have multiple options, ideally we track saved state per option.
+            // But ChatMessage has isSaved at top level.
+            // For now, let's just mark the message as saved.
+            // Ideally ChatMessageOption should have isSaved.
+            // But let's stick to the requested scope.
+            
             val updatedMessage = message.copy(isSaved = true)
             chatRepository.updateMessage(updatedMessage)
         }

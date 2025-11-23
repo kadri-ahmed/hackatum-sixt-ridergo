@@ -79,30 +79,44 @@ fun HomeScreen(
 
     LaunchedEffect(Unit) {
         bookingFlowViewModel.incrementHomeVisitCount()
-        var bookingId = bookingFlowViewModel.bookingId.value
-        if (bookingId == null) {
-            when (val result = bookingRepository.createBooking()) {
-                is Result.Success -> {
-                    bookingId = result.data.id
-                    bookingFlowViewModel.setBookingId(bookingId)
-                }
-                is Result.Error -> {
-                    error = "Failed to create booking session"
-                    isLoading = false
-                    return@LaunchedEffect
+        var currentBookingId = bookingFlowViewModel.bookingId.value
+        var retryCount = 0
+        val maxRetries = 1
+
+        while (retryCount <= maxRetries) {
+            if (currentBookingId == null) {
+                when (val result = bookingRepository.createBooking()) {
+                    is Result.Success -> {
+                        currentBookingId = result.data.id
+                        bookingFlowViewModel.setBookingId(currentBookingId)
+                    }
+                    is Result.Error -> {
+                        error = "Failed to create booking session"
+                        isLoading = false
+                        return@LaunchedEffect
+                    }
                 }
             }
-        }
-        
-        if (bookingId != null) {
-            when (val result = vehiclesRepository.getAvailableVehicles(bookingId)) {
-                is Result.Success -> {
-                    allDeals = result.data.deals
-                    isLoading = false
-                }
-                is Result.Error -> {
-                    error = "Failed to load vehicles"
-                    isLoading = false
+
+            if (currentBookingId != null) {
+                when (val result = vehiclesRepository.getAvailableVehicles(currentBookingId)) {
+                    is Result.Success -> {
+                        allDeals = result.data.deals
+                        isLoading = false
+                        return@LaunchedEffect
+                    }
+                    is Result.Error -> {
+                        if (retryCount < maxRetries) {
+                            println("Booking $currentBookingId invalid or expired, retrying...")
+                            bookingFlowViewModel.clearBooking()
+                            currentBookingId = null
+                            retryCount++
+                        } else {
+                            error = "Failed to load vehicles"
+                            isLoading = false
+                            return@LaunchedEffect
+                        }
+                    }
                 }
             }
         }

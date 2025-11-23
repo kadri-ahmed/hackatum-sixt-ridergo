@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Shield
@@ -52,17 +53,23 @@ import dto.Deal
 import ui.common.SixtCard
 import ui.common.SlideUpComponent
 import ui.components.VehicleQuickInfo
+import ui.common.getCurrencySymbol
+
+data class ChatMessageOption(
+    val deal: dto.Deal,
+    val proposedBooking: dto.SavedBooking? = null,
+    val addonNames: List<String> = emptyList()
+)
 
 data class ChatMessage(
     val text: String,
     val isUser: Boolean,
-    val isOffer: Boolean = false,
-    val offerDetails: String? = null,
-    val deal: dto.Deal? = null,
-    val proposedBooking: dto.SavedBooking? = null,
-    val addonNames: List<String> = emptyList(),
+    val options: List<ChatMessageOption> = emptyList(),
+    val existingBookings: List<dto.SavedBooking> = emptyList(),
+    val bookingsToDelete: List<dto.SavedBooking> = emptyList(),
+    val deletedBookingIds: Set<String> = emptySet(),
     val isSaved: Boolean = false,
-    val id: String = kotlin.random.Random.nextLong().toString() // Moved to end to preserve positional args
+    val id: String = kotlin.random.Random.nextLong().toString()
 )
 
 @OptIn(KoinExperimentalAPI::class, androidx.compose.material3.ExperimentalMaterial3Api::class)
@@ -77,6 +84,16 @@ fun ChatScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     var selectedVehicle by remember { mutableStateOf<Deal?>(null) }
+
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+    androidx.compose.runtime.LaunchedEffect(messages.size, isLoading) {
+        if (messages.isNotEmpty()) {
+            // Scroll to the last item (messages + loading indicator if present)
+            val lastIndex = messages.size + if (isLoading) 0 else -1
+            listState.animateScrollToItem(lastIndex)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -105,6 +122,7 @@ fun ChatScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             LazyColumn(
+                state = listState,
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -115,16 +133,19 @@ fun ChatScreen(
                             selectedVehicle = deal
                         },
                         onVehicleClick = onVehicleSelect,
-                        onBookClick = { message ->
+                        onBookClick = { message, option ->
                             if (message.isSaved) {
                                 // Navigate if already saved
-                                message.proposedBooking?.let { booking ->
+                                option.proposedBooking?.let { booking ->
                                     onBookingSaved(booking.id)
                                 }
                             } else {
                                 // Just save if not saved
-                                viewModel.saveBooking(message)
+                                viewModel.saveBooking(message, option)
                             }
+                        },
+                        onDeleteBooking = { bookingId ->
+                            viewModel.deleteBooking(bookingId)
                         }
                     )
                 }
@@ -205,7 +226,8 @@ fun ChatBubble(
     message: ChatMessage, 
     onLongClickVehicle: ((Deal) -> Unit)? = null,
     onVehicleClick: ((Deal) -> Unit)? = null,
-    onBookClick: ((ChatMessage) -> Unit)? = null
+    onBookClick: ((ChatMessage, ChatMessageOption) -> Unit)? = null,
+    onDeleteBooking: ((String) -> Unit)? = null
 ) {
     val backgroundColor = if (message.isUser) SixtOrange else MaterialTheme.colorScheme.surfaceVariant
     val contentColor = if (message.isUser) Color.White else MaterialTheme.colorScheme.onSurface
@@ -233,139 +255,313 @@ fun ChatBubble(
                     )
                 }
                 
-                if (message.deal != null) {
+                // Suggested Deletions
+                if (message.bookingsToDelete.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(12.dp))
-                    // Premium Vehicle Card
-                    SixtCard(
-                        onClick = { onVehicleClick?.invoke(message.deal) },
-                        onLongClick = { onLongClickVehicle?.invoke(message.deal) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column {
-                            // Image
-                            if (message.deal.vehicle.images.isNotEmpty()) {
-                                coil3.compose.AsyncImage(
-                                    model = message.deal.vehicle.images.first(),
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(140.dp)
-                                        .clip(RoundedCornerShape(12.dp)),
-                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                                )
-                            }
-                            
+                    Text(
+                        text = "Suggested for removal:",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    message.bookingsToDelete.forEach { booking ->
+                        SixtCard(
+                            onClick = { /* Navigate to details? */ },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             Column(modifier = Modifier.padding(12.dp)) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.Top
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = message.deal.vehicle.brand,
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            text = booking.vehicle.vehicle.brand + " " + booking.vehicle.vehicle.model,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                                         )
                                         Text(
-                                            text = message.deal.vehicle.model,
-                                            style = MaterialTheme.typography.titleLarge,
-                                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                            text = booking.status.name,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = if (booking.status == dto.BookingStatus.CONFIRMED) SixtOrange else MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                     Text(
-                                        text = "${message.deal.pricing.displayPrice.currency} ${message.deal.pricing.displayPrice.amount}",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = SixtOrange,
+                                        text = "${getCurrencySymbol(booking.currency)}${ui.common.formatPrice(booking.totalPrice)}",
+                                        style = MaterialTheme.typography.titleSmall,
                                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                                     )
                                 }
-                                
-                                // Show proposed details if available
-                                if (message.proposedBooking != null) {
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    
-                                    if (message.proposedBooking.protectionPackage != null || message.addonNames.isNotEmpty()) {
-                                        Text(
-                                            text = "Includes:",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
-                                        )
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                    }
-                                    
-                                    if (message.proposedBooking.protectionPackage != null) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(
-                                                Icons.Default.Shield, // Assuming Shield icon exists, or use CheckCircle
-                                                contentDescription = null,
-                                                tint = SixtOrange,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text(
-                                                text = message.proposedBooking.protectionPackage.name,
-                                                style = MaterialTheme.typography.bodyMedium
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                    }
-                                    
-                                    message.addonNames.forEach { addonName ->
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(
-                                                Icons.Default.Add, // Or a generic plus/check icon
-                                                contentDescription = null,
-                                                tint = SixtOrange,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text(
-                                                text = addonName,
-                                                style = MaterialTheme.typography.bodyMedium
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                    }
-                                    
-                                    Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.height(12.dp))
+                                if (message.deletedBookingIds.contains(booking.id)) {
                                     androidx.compose.material3.Button(
-                                        onClick = { 
-                                            if (message.isSaved) {
-                                                // Navigate to booking detail
-                                                message.proposedBooking?.let { booking ->
-                                                    onBookClick?.invoke(message) // This will trigger navigation in parent
-                                                }
-                                            } else {
-                                                // Save booking
-                                                onBookClick?.invoke(message) 
-                                            }
-                                        },
+                                        onClick = {},
+                                        enabled = false,
                                         modifier = Modifier.fillMaxWidth().height(48.dp),
                                         colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                            containerColor = if (message.isSaved) MaterialTheme.colorScheme.surfaceContainerHighest else SixtOrange,
-                                            contentColor = if (message.isSaved) MaterialTheme.colorScheme.onSurface else Color.White
+                                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                                         ),
                                         shape = RoundedCornerShape(12.dp)
                                     ) {
-                                        if (message.isSaved) {
-                                            Icon(
-                                                Icons.Default.CheckCircle,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(18.dp)
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Deleted", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    }
+                                } else {
+                                    androidx.compose.material3.OutlinedButton(
+                                        onClick = { onDeleteBooking?.invoke(booking.id) },
+                                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                                        colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                            contentColor = MaterialTheme.colorScheme.error
+                                        ),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Delete Booking", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+                
+                // Existing Bookings List
+                if (message.existingBookings.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Your Bookings:",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    message.existingBookings.forEach { booking ->
+                        SixtCard(
+                            onClick = { /* Navigate to details? */ },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = booking.vehicle.vehicle.brand + " " + booking.vehicle.vehicle.model,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = booking.status.name,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = if (booking.status == dto.BookingStatus.CONFIRMED) SixtOrange else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Text(
+                                        text = "${getCurrencySymbol(booking.currency)}${ui.common.formatPrice(booking.totalPrice)}",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(12.dp))
+                                if (message.deletedBookingIds.contains(booking.id)) {
+                                    androidx.compose.material3.Button(
+                                        onClick = {},
+                                        enabled = false,
+                                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                        ),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Deleted", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    }
+                                } else {
+                                    androidx.compose.material3.OutlinedButton(
+                                        onClick = { onDeleteBooking?.invoke(booking.id) },
+                                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                                        colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                            contentColor = MaterialTheme.colorScheme.error
+                                        ),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Delete Booking", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+                
+                // Options (Deals/Proposals)
+                if (message.options.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    message.options.forEach { option ->
+                        SixtCard(
+                            onClick = { onVehicleClick?.invoke(option.deal) },
+                            onLongClick = { onLongClickVehicle?.invoke(option.deal) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column {
+                                // Image
+                                if (option.deal.vehicle.images.isNotEmpty()) {
+                                    coil3.compose.AsyncImage(
+                                        model = option.deal.vehicle.images.first(),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(140.dp)
+                                            .clip(RoundedCornerShape(12.dp)),
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                    )
+                                }
+                                
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.Top
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = option.deal.vehicle.brand,
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Saved", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                                        } else {
-                                            Text("Save Booking", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                            Text(
+                                                text = option.deal.vehicle.model,
+                                                style = MaterialTheme.typography.titleLarge,
+                                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                            )
+                                        }
+                                        val displayPrice = option.proposedBooking?.totalPrice ?: option.deal.pricing.totalPrice.amount
+                                        val displayCurrency = option.proposedBooking?.currency ?: option.deal.pricing.totalPrice.currency
+                                        
+                                        Column(horizontalAlignment = Alignment.End) {
+                                            Text(
+                                                text = "${getCurrencySymbol(displayCurrency)}${ui.common.formatPrice(displayPrice)}",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = SixtOrange,
+                                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                            )
+                                            Text(
+                                                text = "Total",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                    
+                                    // Show proposed details if available
+                                    if (option.proposedBooking != null) {
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        
+                                        if (option.proposedBooking.protectionPackage != null || option.addonNames.isNotEmpty()) {
+                                            Text(
+                                                text = "Includes:",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                                            )
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                        }
+                                        
+                                        if (option.proposedBooking.protectionPackage != null) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    Icons.Default.Shield,
+                                                    contentDescription = null,
+                                                    tint = SixtOrange,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    text = option.proposedBooking.protectionPackage.name,
+                                                    style = MaterialTheme.typography.bodyMedium
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                        }
+                                        
+                                        option.addonNames.forEach { addonName ->
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    Icons.Default.Add,
+                                                    contentDescription = null,
+                                                    tint = SixtOrange,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    text = addonName,
+                                                    style = MaterialTheme.typography.bodyMedium
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                        }
+                                        
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                        androidx.compose.material3.Button(
+                                            onClick = { 
+                                                onBookClick?.invoke(message, option)
+                                            },
+                                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                                containerColor = if (message.isSaved) MaterialTheme.colorScheme.surfaceContainerHighest else SixtOrange,
+                                                contentColor = if (message.isSaved) MaterialTheme.colorScheme.onSurface else Color.White
+                                            ),
+                                            shape = RoundedCornerShape(12.dp)
+                                        ) {
+                                            if (message.isSaved) {
+                                                Icon(
+                                                    Icons.Default.CheckCircle,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text("Saved", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                            } else {
+                                                Text("Save Booking", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
+                        Spacer(modifier = Modifier.height(12.dp))
                     }
                 }
             }

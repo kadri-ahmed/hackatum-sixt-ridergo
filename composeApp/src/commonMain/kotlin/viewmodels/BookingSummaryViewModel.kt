@@ -20,7 +20,8 @@ import kotlin.time.ExperimentalTime
 class BookingSummaryViewModel(
     private val bookingRepository: BookingRepository,
     private val bookingFlowViewModel: BookingFlowViewModel,
-    private val savedBookingRepository: SavedBookingRepository
+    private val savedBookingRepository: SavedBookingRepository,
+    private val vehiclesRepository: repositories.VehiclesRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<BookingSummaryUiState>(BookingSummaryUiState.Loading)
@@ -36,7 +37,21 @@ class BookingSummaryViewModel(
             
             when (val result = bookingRepository.getBooking(bookingId)) {
                 is Result.Success -> {
-                    _uiState.value = BookingSummaryUiState.Loaded(result.data)
+                    var booking = result.data
+                    
+                    // Fetch and populate selected addons
+                    val selectedAddonIds = bookingFlowViewModel.selectedAddons.value
+                    if (selectedAddonIds.isNotEmpty()) {
+                        val addonsResult = vehiclesRepository.getAvailableAddons(bookingId)
+                        if (addonsResult is Result.Success) {
+                            val selectedAddonsList = addonsResult.data.addons
+                                .flatMap { it.options }
+                                .filter { selectedAddonIds.contains(it.chargeDetail.id) }
+                            booking = booking.copy(addons = selectedAddonsList)
+                        }
+                    }
+                    
+                    _uiState.value = BookingSummaryUiState.Loaded(booking)
                 }
                 is Result.Error -> {
                     val errorMessage = mapError(result.error)
@@ -78,7 +93,25 @@ class BookingSummaryViewModel(
             val protectionPrice = booking.protectionPackages?.price?.totalPrice?.amount 
                 ?: booking.protectionPackages?.price?.displayPrice?.amount 
                 ?: 0.0
-            val totalAmount = vehiclePrice + protectionPrice
+                
+            // Calculate addon price
+            var addonsPrice = 0.0
+            val selectedAddonIds = bookingFlowViewModel.selectedAddons.value
+            if (selectedAddonIds.isNotEmpty()) {
+                val result = vehiclesRepository.getAvailableAddons(booking.id)
+                if (result is Result.Success) {
+                    result.data.addons.forEach { category ->
+                        category.options.forEach { option ->
+                            if (selectedAddonIds.contains(option.chargeDetail.id)) {
+                                addonsPrice += option.additionalInfo.price.totalPrice?.amount
+                                    ?: option.additionalInfo.price.displayPrice.amount
+                            }
+                        }
+                    }
+                }
+            }
+            
+            val totalAmount = vehiclePrice + protectionPrice + addonsPrice
             val currency = vehicle.pricing.totalPrice.currency
             
             // Check if we already have a saved booking for this ID
@@ -90,7 +123,7 @@ class BookingSummaryViewModel(
                 bookingId = booking.id,
                 vehicle = vehicle,
                 protectionPackage = booking.protectionPackages,
-                addonIds = bookingFlowViewModel.selectedAddons.value,
+                addonIds = selectedAddonIds,
                 timestamp = Clock.System.now().toEpochMilliseconds(),
                 totalPrice = totalAmount,
                 currency = currency,
@@ -113,7 +146,25 @@ class BookingSummaryViewModel(
                     val protectionPrice = booking.protectionPackages?.price?.totalPrice?.amount 
                         ?: booking.protectionPackages?.price?.displayPrice?.amount 
                         ?: 0.0
-                    val totalAmount = vehiclePrice + protectionPrice
+                        
+                    // Calculate addon price
+                    var addonsPrice = 0.0
+                    val selectedAddonIds = bookingFlowViewModel.selectedAddons.value
+                    if (selectedAddonIds.isNotEmpty()) {
+                        val result = vehiclesRepository.getAvailableAddons(booking.id)
+                        if (result is Result.Success) {
+                            result.data.addons.forEach { category ->
+                                category.options.forEach { option ->
+                                    if (selectedAddonIds.contains(option.chargeDetail.id)) {
+                                        addonsPrice += option.additionalInfo.price.totalPrice?.amount
+                                            ?: option.additionalInfo.price.displayPrice.amount
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    val totalAmount = vehiclePrice + protectionPrice + addonsPrice
                     val currency = vehicle.pricing.totalPrice.currency
                     
                     val savedBooking = SavedBooking(
@@ -121,7 +172,7 @@ class BookingSummaryViewModel(
                         bookingId = booking.id,
                         vehicle = vehicle,
                         protectionPackage = booking.protectionPackages,
-                        addonIds = bookingFlowViewModel.selectedAddons.value,
+                        addonIds = selectedAddonIds,
                         timestamp = Clock.System.now().toEpochMilliseconds(),
                         totalPrice = totalAmount,
                         currency = currency,

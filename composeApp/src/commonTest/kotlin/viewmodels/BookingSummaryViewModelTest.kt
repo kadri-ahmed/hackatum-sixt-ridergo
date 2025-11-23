@@ -32,13 +32,16 @@ class BookingSummaryViewModelTest {
     private lateinit var bookingFlowViewModel: BookingFlowViewModel
     private val testDispatcher = StandardTestDispatcher()
 
+    private lateinit var vehiclesRepository: MockVehiclesRepository
+
     @BeforeTest
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         bookingRepository = MockBookingRepository()
         savedBookingRepository = MockSavedBookingRepository()
+        vehiclesRepository = MockVehiclesRepository()
         bookingFlowViewModel = BookingFlowViewModel(bookingRepository)
-        viewModel = BookingSummaryViewModel(bookingRepository, bookingFlowViewModel, savedBookingRepository)
+        viewModel = BookingSummaryViewModel(bookingRepository, bookingFlowViewModel, savedBookingRepository, vehiclesRepository)
     }
 
     @AfterTest
@@ -195,5 +198,19 @@ class MockSavedBookingRepository : repositories.SavedBookingRepository {
 
     override suspend fun deleteBooking(id: String) {
         // No-op
+    }
+}
+
+class MockVehiclesRepository : repositories.VehiclesRepository {
+    override suspend fun getAvailableVehicles(bookingId: String): Result<dto.AvailableVehiclesDto, NetworkError> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getAvailableProtectionPackages(bookingId: String): Result<dto.ProtectionPackagesDto, NetworkError> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getAvailableAddons(bookingId: String): Result<dto.AddonsDto, NetworkError> {
+        return Result.Success(dto.AddonsDto(emptyList()))
     }
 }

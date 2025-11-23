@@ -243,22 +243,7 @@ fun SwipeableVehicleCard(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Features
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        FeatureChip(
-                            icon = Icons.Default.Person,
-                            text = "${deal.vehicle.passengersCount}"
-                        )
-                        FeatureChip(icon = Icons.Default.Star, text = "${deal.vehicle.bagsCount}")
-                        Text(
-                            "More",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.align(Alignment.CenterVertically)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
+                    // Features (Dynamic from Attributes)
 
                     // Price & Action
                     Row(
@@ -268,13 +253,13 @@ fun SwipeableVehicleCard(
                     ) {
                         Column {
                             Text(
-                                text = "+ ${deal.pricing.displayPrice.currency}${deal.pricing.displayPrice.amount}",
+                                text = "+ ${ui.common.getCurrencySymbol(deal.pricing.totalPrice.currency)}${ui.common.formatPrice(deal.pricing.totalPrice.amount)}",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "/day",
+                                text = "Total",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -337,7 +322,7 @@ fun SwipeableVehicleCard(
     }
 }
 @Composable
-fun FeatureChip(icon: ImageVector, text: String) {
+fun AttributeChip(attribute: dto.VehicleAttribute) {
     Box(
         modifier = Modifier
             .background(MaterialTheme.colorScheme.surface, CircleShape)
@@ -345,9 +330,18 @@ fun FeatureChip(icon: ImageVector, text: String) {
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurface)
+            if (attribute.iconUrl != null) {
+                AsyncImage(
+                    model = attribute.iconUrl,
+                    contentDescription = attribute.title,
+                    modifier = Modifier.size(16.dp),
+                    contentScale = ContentScale.Fit
+                )
+            } else {
+                 Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurface)
+            }
             Spacer(modifier = Modifier.width(4.dp))
-            Text(text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
+            Text(attribute.value, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }

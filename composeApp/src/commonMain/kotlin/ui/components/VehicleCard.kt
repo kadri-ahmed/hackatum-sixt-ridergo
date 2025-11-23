@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
@@ -33,6 +34,8 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 import ui.common.SixtCard
 import ui.common.SixtPrimaryButton
 import ui.theme.SixtOrange
+
+import ui.common.getCurrencySymbol
 
 @OptIn(ExperimentalResourceApi::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
@@ -59,13 +62,13 @@ fun VehicleCard(deal: Deal, onSelect: () -> Unit, onLongClick: (() -> Unit)? = n
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = "${deal.pricing.displayPrice.currency} ${deal.pricing.displayPrice.amount}",
+                        text = "${getCurrencySymbol(deal.pricing.totalPrice.currency)}${ui.common.formatPrice(deal.pricing.totalPrice.amount)}",
                         style = MaterialTheme.typography.headlineSmall,
                         color = SixtOrange,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = deal.pricing.displayPrice.suffix ?: "/day",
+                        text = "Total",
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -97,11 +100,17 @@ fun VehicleCard(deal: Deal, onSelect: () -> Unit, onLongClick: (() -> Unit)? = n
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Features
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                FeatureItem(icon = Icons.Default.Person, text = "${deal.vehicle.passengersCount}")
-                FeatureItem(icon = Icons.Default.Settings, text = deal.vehicle.transmissionType)
-                // Add more features as needed
+            // Features (Dynamic from Attributes)
+            if (deal.vehicle.attributes.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Display up to 3 attributes to fit in the card
+                    deal.vehicle.attributes.take(3).forEach { attribute ->
+                        AttributeItem(attribute)
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -144,10 +153,20 @@ fun VehicleCard(deal: Deal, onSelect: () -> Unit, onLongClick: (() -> Unit)? = n
 }
 
 @Composable
-fun FeatureItem(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {
+fun AttributeItem(attribute: dto.VehicleAttribute) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Gray)
+        if (attribute.iconUrl != null) {
+            AsyncImage(
+                model = attribute.iconUrl,
+                contentDescription = attribute.title,
+                modifier = Modifier.size(16.dp),
+                contentScale = ContentScale.Fit
+            )
+        } else {
+            // Fallback icon if no URL
+             Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Gray)
+        }
         Spacer(modifier = Modifier.width(4.dp))
-        Text(text, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+        Text(attribute.value, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
     }
 }

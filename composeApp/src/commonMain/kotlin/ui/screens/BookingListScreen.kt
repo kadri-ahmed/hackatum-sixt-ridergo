@@ -42,6 +42,8 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import dto.SavedBooking
 import repositories.SavedBookingRepository
+import ui.common.formatPrice
+import ui.common.getCurrencySymbol
 import ui.theme.SixtOrange
 import viewmodels.BookingFlowViewModel
 
@@ -186,8 +188,9 @@ fun SavedBookingCard(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
+
                 Text(
-                    text = "Total: ${booking.currency}${booking.totalPrice}",
+                    text = "Total: ${getCurrencySymbol(booking.currency)}${formatPrice(booking.totalPrice)}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = SixtOrange,
                     fontWeight = FontWeight.Bold

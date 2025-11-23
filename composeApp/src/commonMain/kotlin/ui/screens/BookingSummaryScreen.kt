@@ -7,6 +7,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import org.jetbrains.compose.resources.painterResource
 import ui.common.ErrorView
 import ui.common.LoadingIndicator
 import ui.common.SixtCard
@@ -50,6 +52,8 @@ import ui.state.BookingSummaryUiState
 import ui.theme.SixtOrange
 import viewmodels.BookingSummaryViewModel
 import org.koin.compose.viewmodel.koinViewModel
+import ridergo.composeapp.generated.resources.Res
+import ridergo.composeapp.generated.resources.qr_code
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -135,17 +139,17 @@ fun SuccessView(
 
         Box(
             modifier = Modifier
-                .size(120.dp)
+                .size(200.dp) // Increased size for QR code
                 .scale(scale)
-                .background(SixtOrange.copy(alpha = 0.1f), CircleShape)
-                .padding(24.dp),
+                .background(Color.White, RoundedCornerShape(12.dp))
+                .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                Icons.Default.Check,
-                contentDescription = null,
-                tint = SixtOrange,
-                modifier = Modifier.size(64.dp)
+            Image(
+                painter = painterResource(Res.drawable.qr_code),
+                contentDescription = "Booking QR Code",
+                modifier = Modifier.size(200.dp),
+                contentScale = ContentScale.Fit
             )
         }
         
@@ -256,8 +260,13 @@ fun BookingSummaryContent(
                 val protectionPrice = booking.protectionPackages?.price?.totalPrice?.amount 
                     ?: booking.protectionPackages?.price?.displayPrice?.amount 
                     ?: 0.0
-                val totalAmount = vehiclePrice + protectionPrice
-                val currency = booking.selectedVehicle?.pricing?.totalPrice?.currency ?: "€"
+                val addonsPrice = booking.addons?.sumOf { 
+                    it.additionalInfo.price.totalPrice?.amount ?: it.additionalInfo.price.displayPrice.amount 
+                } ?: 0.0
+                
+                val totalAmount = vehiclePrice + protectionPrice + addonsPrice
+                val currency = booking.selectedVehicle?.pricing?.totalPrice?.currency ?: "EUR"
+                val currencySymbol = ui.common.getCurrencySymbol(currency)
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -265,7 +274,7 @@ fun BookingSummaryContent(
                 ) {
                     Text("Total Price", fontWeight = FontWeight.Bold)
                     Text(
-                        "$currency$totalAmount",
+                        "$currencySymbol${ui.common.formatPrice(totalAmount)}",
                         fontWeight = FontWeight.Bold,
                         color = SixtOrange
                     )

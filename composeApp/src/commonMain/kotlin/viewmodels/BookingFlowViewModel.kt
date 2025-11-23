@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import repositories.BookingRepository
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 class BookingFlowViewModel(
     private val bookingRepository: BookingRepository
@@ -81,28 +83,43 @@ class BookingFlowViewModel(
         _isModifying.value = false
     }
 
+    @OptIn(ExperimentalTime::class)
     suspend fun saveDraft(
         vehicle: dto.Vehicle, 
         pricing: dto.Pricing,
         protectionPackage: dto.ProtectionPackageDto?,
+        availableAddons: List<dto.AddonCategory>,
         savedBookingRepository: repositories.SavedBookingRepository
     ) {
         val currentBookingId = _bookingId.value
-        val idToSave = if (currentBookingId != null && _isModifying.value) currentBookingId else kotlinx.datetime.Clock.System.now().toEpochMilliseconds().toString()
+        val idToSave = if (currentBookingId != null && _isModifying.value) currentBookingId else Clock.System.now().toEpochMilliseconds().toString()
         
         val vehiclePrice = pricing.totalPrice.amount
         val protectionPrice = protectionPackage?.price?.totalPrice?.amount 
             ?: protectionPackage?.price?.displayPrice?.amount 
             ?: 0.0
-        val totalAmount = vehiclePrice + protectionPrice
+            
+        // Calculate addon price
+        val selectedAddonIds = _selectedAddons.value
+        var addonsPrice = 0.0
+        availableAddons.forEach { category ->
+            category.options.forEach { option ->
+                if (selectedAddonIds.contains(option.chargeDetail.id)) {
+                    addonsPrice += option.additionalInfo.price.totalPrice?.amount
+                        ?: option.additionalInfo.price.displayPrice.amount
+                }
+            }
+        }
+            
+        val totalAmount = vehiclePrice + protectionPrice + addonsPrice
         
         val savedBooking = dto.SavedBooking(
             id = idToSave,
             bookingId = idToSave, // For drafts, bookingId can be same as ID or generated
             vehicle = dto.Deal(vehicle, pricing, ""), // Reconstruct Deal
             protectionPackage = protectionPackage,
-            addonIds = _selectedAddons.value,
-            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
+            addonIds = selectedAddonIds,
+            timestamp = Clock.System.now().toEpochMilliseconds(),
             totalPrice = totalAmount,
             currency = pricing.totalPrice.currency,
             status = dto.BookingStatus.DRAFT

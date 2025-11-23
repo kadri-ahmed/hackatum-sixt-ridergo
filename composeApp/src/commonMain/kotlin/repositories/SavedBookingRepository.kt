@@ -63,7 +63,9 @@ class SavedBookingRepositoryImpl(
     }
 
     override fun getSavedBookings(): Flow<List<SavedBooking>> {
-        return _savedBookings.asStateFlow()
+        return _savedBookings.asStateFlow().map { list ->
+            list.sortedByDescending { it.timestamp }
+        }
     }
 
     override suspend fun deleteBooking(id: String) {

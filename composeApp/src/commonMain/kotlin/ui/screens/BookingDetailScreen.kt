@@ -24,6 +24,11 @@ import ui.common.SixtCard
 import ui.theme.SixtOrange
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.GlobalScope
+import org.jetbrains.compose.resources.painterResource
+import ridergo.composeapp.generated.resources.Res
+import ridergo.composeapp.generated.resources.qr_code
+import ui.common.getCurrencySymbol
+import ui.common.formatPrice
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun BookingDetailScreen(
@@ -200,7 +205,7 @@ fun BookingDetailScreen(
                         }
                     }
                 } else {
-                    // QR Code Placeholder for Confirmed bookings
+                    // QR Code for Confirmed bookings
                     SixtCard(modifier = Modifier.fillMaxWidth()) {
                         Column(
                             modifier = Modifier.padding(24.dp).fillMaxWidth(),
@@ -209,14 +214,15 @@ fun BookingDetailScreen(
                             Box(
                                 modifier = Modifier
                                     .size(200.dp)
-                                    .background(Color.Black, RoundedCornerShape(12.dp)),
+                                    .background(Color.White, RoundedCornerShape(12.dp))
+                                    .padding(16.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                // Mock QR Code visual
-                                Box(
-                                    modifier = Modifier
-                                        .size(180.dp)
-                                        .background(Color.White, RoundedCornerShape(8.dp))
+                                androidx.compose.foundation.Image(
+                                    painter = painterResource(Res.drawable.qr_code),
+                                    contentDescription = "Booking QR Code",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Fit
                                 )
                             }
                             Spacer(modifier = Modifier.height(16.dp))

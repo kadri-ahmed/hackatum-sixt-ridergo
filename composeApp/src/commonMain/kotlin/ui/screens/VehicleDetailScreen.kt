@@ -62,8 +62,11 @@ import dto.Deal
 import dto.ProtectionPackageDto
 import kotlinx.coroutines.launch
 import repositories.VehiclesRepository
+import ui.common.formatPrice
 import ui.theme.SixtOrange
 import utils.Result
+
+import ui.common.getCurrencySymbol
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -82,8 +85,8 @@ fun VehicleDetailScreen(
     var selectedProtectionId by remember { mutableStateOf<String?>(null) }
     
     val bookingId = bookingFlowViewModel.bookingId.collectAsState().value
-
     val isModifying = bookingFlowViewModel.isModifying.collectAsState().value
+    val selectedAddons = bookingFlowViewModel.selectedAddons.collectAsState().value
 
     LaunchedEffect(bookingId) {
         if (bookingId != null) {
@@ -91,11 +94,18 @@ fun VehicleDetailScreen(
             when (val result = repository.getAvailableProtectionPackages(bookingId)) {
                 is Result.Success -> {
                     protectionPackages = result.data.protectionPackages
-                    // Select middle package by default if available
-                    if (protectionPackages.size >= 2) {
-                        selectedProtectionId = protectionPackages[1].id
-                    } else if (protectionPackages.isNotEmpty()) {
-                        selectedProtectionId = protectionPackages[0].id
+                    
+                    // Check if a protection is already selected in ViewModel (e.g. from Chat or Saved Booking)
+                    val preSelectedId = bookingFlowViewModel.selectedProtectionPackageId.value
+                    if (preSelectedId != null && protectionPackages.any { it.id == preSelectedId }) {
+                        selectedProtectionId = preSelectedId
+                    } else {
+                        // Default fallback: Select middle package
+                        if (protectionPackages.size >= 2) {
+                            selectedProtectionId = protectionPackages[1].id
+                        } else if (protectionPackages.isNotEmpty()) {
+                            selectedProtectionId = protectionPackages[0].id
+                        }
                     }
                 }
                 is Result.Error -> println("Error fetching protections")
@@ -108,6 +118,19 @@ fun VehicleDetailScreen(
             isLoading = false
         }
     }
+
+    // Calculate Dynamic Total Price
+    val basePrice = deal.pricing.totalPrice.amount
+    val protectionPrice = protectionPackages.find { it.id == selectedProtectionId }?.price?.totalPrice?.amount 
+        ?: protectionPackages.find { it.id == selectedProtectionId }?.price?.displayPrice?.amount 
+        ?: 0.0
+    
+    val addonsPrice = addons.flatMap { it.options }
+        .filter { selectedAddons.contains(it.chargeDetail.id) }
+        .sumOf { it.additionalInfo.price.totalPrice?.amount ?: it.additionalInfo.price.displayPrice.amount }
+
+    val grandTotal = basePrice + protectionPrice + addonsPrice
+    val currencySymbol = getCurrencySymbol(deal.pricing.displayPrice.currency)
 
     Scaffold(
         bottomBar = {
@@ -130,7 +153,7 @@ fun VehicleDetailScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "${deal.pricing.displayPrice.currency}${deal.pricing.displayPrice.amount}",
+                            text = "$currencySymbol${formatPrice(grandTotal)}", // Dynamic Total
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
@@ -149,6 +172,7 @@ fun VehicleDetailScreen(
                                         vehicle = deal.vehicle,
                                         pricing = deal.pricing,
                                         protectionPackage = selectedProtection,
+                                        availableAddons = addons,
                                         savedBookingRepository = savedBookingRepository
                                     )
                                     onBack() // Go back after saving
@@ -266,7 +290,7 @@ fun VehicleDetailScreen(
                         )
                     }
                     Text(
-                        text = "${deal.pricing.displayPrice.currency}${deal.pricing.displayPrice.amount}/day",
+                        text = "$currencySymbol${formatPrice(deal.pricing.totalPrice.amount)}", // Total Price
                         style = MaterialTheme.typography.titleMedium,
                         color = SixtOrange,
                         fontWeight = FontWeight.Bold
@@ -323,7 +347,7 @@ fun VehicleDetailScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 if (!isLoading) {
-                    val selectedAddons = bookingFlowViewModel.selectedAddons.collectAsState().value
+                    // selectedAddons is now collected at top level
                     
                     addons.forEach { category ->
                         category.options.take(3).forEach { option ->
@@ -363,13 +387,13 @@ fun VehicleDetailScreen(
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(option.chargeDetail.title, fontWeight = FontWeight.SemiBold)
                                     Text(
-                                        "${option.additionalInfo.price.displayPrice.currency}${option.additionalInfo.price.displayPrice.amount}", 
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        text = "+ ${getCurrencySymbol(option.additionalInfo.price.displayPrice.currency)}${formatPrice(option.additionalInfo.price.displayPrice.amount)}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold
                                     )
                                 }
                                 Icon(
-                                    Icons.Default.Check, 
+                                    Icons.Default.Check,
                                     contentDescription = if (isSelected) "Selected" else "Add",
                                     tint = if (isSelected) SixtOrange else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
                                     modifier = Modifier.alpha(if (isSelected) 1f else 0.3f)
@@ -481,7 +505,7 @@ fun DetailProtectionCard(
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
-                text = "+ ${item.price.displayPrice.currency}${item.price.displayPrice.amount}",
+                text = "+ ${getCurrencySymbol(item.price.displayPrice.currency)}${formatPrice(item.price.displayPrice.amount)}", // Formatted Symbol
                 style = MaterialTheme.typography.titleSmall,
                 color = if (isSelected) SixtOrange else MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold
