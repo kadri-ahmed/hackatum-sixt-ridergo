@@ -30,7 +30,7 @@ val appModule = module {
     viewModel { viewmodels.VehicleListViewModel(get(), get()) }
     viewModel { viewmodels.ProtectionViewModel(get(), get()) }
     viewModel { viewmodels.BookingSummaryViewModel(get(), get()) }
-    viewModel { viewmodels.ChatViewModel(get(), get(), get()) }
+    viewModel { viewmodels.ChatViewModel(get(), get(), get(), get()) }
     
     // Shared state for booking flow
     // Shared state for booking flow

@@ -27,9 +27,11 @@ class VehiclesRepositoryImpl(
         return api.getAvailableAddons(bookingId)
     }
 
-    override suspend fun searchVehicles(query: String): Result<AvailableVehiclesDto, NetworkError> {
-        // Mock search by fetching all and filtering
-        return when (val result = api.getAvailableVehicles("mock_booking_id")) {
+    override suspend fun searchVehicles(query: String, bookingId: String?): Result<AvailableVehiclesDto, NetworkError> {
+        // Use provided booking ID or fallback to a default for search
+        // In a real app, search might use a different endpoint
+        val searchBookingId = bookingId ?: "mock_booking_id" // Fallback only for search functionality
+        return when (val result = api.getAvailableVehicles(searchBookingId)) {
             is Result.Success -> {
                 val filtered = result.data.deals.filter { deal ->
                     deal.vehicle.brand.contains(query, ignoreCase = true) ||

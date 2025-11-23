@@ -43,6 +43,7 @@ import coil3.request.crossfade
 import dto.Deal
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -87,17 +88,25 @@ fun VehicleDetailScreen(
     var protectionPackages by remember { mutableStateOf<List<ProtectionPackageDto>>(emptyList()) }
     var addons by remember { mutableStateOf<List<AddonCategory>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    
+    val bookingId by bookingFlowViewModel.bookingId.collectAsState()
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(bookingId) {
+        val currentBookingId = bookingId
+        if (currentBookingId == null) {
+            isLoading = false
+            return@LaunchedEffect
+        }
+        
         // Fetch protections
-        when (val result = repository.getAvailableProtectionPackages("mock_booking_id")) {
+        when (val result = repository.getAvailableProtectionPackages(currentBookingId)) {
             is Result.Success -> protectionPackages = result.data.protectionPackages
-            is Result.Error -> println("Error fetching protections")
+            is Result.Error -> println("Error fetching protections: ${result.error}")
         }
         // Fetch addons
-        when (val result = repository.getAvailableAddons("mock_booking_id")) {
+        when (val result = repository.getAvailableAddons(currentBookingId)) {
             is Result.Success -> addons = result.data.addons
-            is Result.Error -> println("Error fetching addons")
+            is Result.Error -> println("Error fetching addons: ${result.error}")
         }
         isLoading = false
     }
@@ -287,9 +296,15 @@ fun VehicleDetailScreen(
             SixtPrimaryButton(
                 text = "Continue with upgrade",
                 onClick = { 
-                    bookingFlowViewModel.setBookingId("mock_booking_id")
-                    bookingFlowViewModel.selectVehicle(deal.vehicle.id)
-                    onUpgrade(deal) 
+                    val currentBookingId = bookingFlowViewModel.bookingId.value
+                    if (currentBookingId != null) {
+                        bookingFlowViewModel.selectVehicle(deal.vehicle.id)
+                        onUpgrade(deal)
+                    } else {
+                        // Booking should have been created earlier in the flow
+                        // If not, show error or create one
+                        println("Warning: No booking ID found. Please start a booking first.")
+                    }
                 }
             )
         }

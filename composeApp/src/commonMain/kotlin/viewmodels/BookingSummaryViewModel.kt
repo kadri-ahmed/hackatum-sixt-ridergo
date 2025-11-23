@@ -62,13 +62,14 @@ class BookingSummaryViewModel(
 
     private fun mapError(error: NetworkError): String {
         return when(error) {
-            NetworkError.NO_INTERNET -> "No internet connection"
-            NetworkError.REQUEST_TIMEOUT -> "Request timed out"
-            NetworkError.SERVER_ERROR -> "Server error"
-            NetworkError.SERIALIZATION -> "Failed to process response"
-            NetworkError.CONFLICT -> "Booking conflict - please try again"
-            NetworkError.UNAUTHORIZED -> "Authorization error"
-            else -> "Failed to complete booking. Please contact support."
+            NetworkError.NO_INTERNET -> "Connection error: Unable to reach the server. Please check your internet connection and try again."
+            NetworkError.REQUEST_TIMEOUT -> "Request timed out: The server took too long to respond. Please try again."
+            NetworkError.SERVER_ERROR -> "Server error: The server encountered an error. Please try again later."
+            NetworkError.SERIALIZATION -> "Failed to process response: There was an error processing the booking data."
+            NetworkError.CONFLICT -> "Booking conflict: This booking may have already been completed. Please refresh and try again."
+            NetworkError.UNAUTHORIZED -> "Authorization error: Your session may have expired. Please try again."
+            NetworkError.BAD_REQUEST -> "Invalid request: Please check your booking details and try again."
+            else -> "Failed to complete booking: An unexpected error occurred. Please try again or contact support."
         }
     }
 }

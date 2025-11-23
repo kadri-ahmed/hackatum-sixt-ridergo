@@ -64,7 +64,9 @@ class SearchViewModel(
     fun searchVehicles(query: String) {
         viewModelScope.launch {
             _uiState.value = SearchUiState.Loading
-            when (val result = vehiclesRepository.searchVehicles(query)) {
+            // Use the booking ID from BookingFlowViewModel
+            val bookingId = bookingFlowViewModel.bookingId.value
+            when (val result = vehiclesRepository.searchVehicles(query, bookingId)) {
                 is Result.Success -> {
                     _uiState.value = SearchUiState.SearchResults(result.data.deals)
                 }

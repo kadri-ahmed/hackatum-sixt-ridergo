@@ -35,7 +35,8 @@ interface VehiclesRepository {
     /**
      * Searches for vehicles matching the query.
      * @param query The search query (e.g. brand, model)
+     * @param bookingId Optional booking ID. If not provided, will use a fallback.
      * @return Result containing matching vehicles
      */
-    suspend fun searchVehicles(query: String): Result<AvailableVehiclesDto, NetworkError>
+    suspend fun searchVehicles(query: String, bookingId: String? = null): Result<AvailableVehiclesDto, NetworkError>
 }

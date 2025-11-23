@@ -19,10 +19,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import org.koin.compose.koinInject
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -63,6 +65,7 @@ fun HomeScreen(
     navigateToTripDetails: () -> Unit,
     popBackStack: () -> Unit,
     popUpToLogin: () -> Unit,
+    bookingFlowViewModel: viewmodels.BookingFlowViewModel = org.koin.compose.koinInject()
 ) {
     // Dependency Injection (Simplified for this step)
     // Dependency Injection (Simplified for this step)
@@ -84,16 +87,58 @@ fun HomeScreen(
     var selectedContext by remember { mutableStateOf<ContextFilter>(ContextFilter.All) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
+    
+    val bookingId by bookingFlowViewModel.bookingId.collectAsState()
+    val bookingRepository = org.koin.compose.koinInject<repositories.BookingRepository>()
 
+    // Ensure booking is created when HomeScreen loads, then load vehicles
     LaunchedEffect(Unit) {
-        when (val result = repository.getAvailableVehicles("mock_booking_id")) {
-            is Result.Success -> {
-                allDeals = result.data.deals
-                isLoading = false
+        var currentBookingId = bookingId
+        if (currentBookingId == null) {
+            // Create a booking if one doesn't exist
+            when (val result = bookingRepository.createBooking()) {
+                is Result.Success -> {
+                    bookingFlowViewModel.setBookingId(result.data.id)
+                    currentBookingId = result.data.id
+                }
+                is Result.Error -> {
+                    error = "Failed to create booking session"
+                    isLoading = false
+                    return@LaunchedEffect
+                }
             }
-            is Result.Error -> {
-                error = "Failed to load vehicles"
-                isLoading = false
+        }
+        
+        // Load vehicles with the booking ID (either existing or newly created)
+        if (currentBookingId != null) {
+            when (val result = repository.getAvailableVehicles(currentBookingId)) {
+                is Result.Success -> {
+                    allDeals = result.data.deals
+                    isLoading = false
+                }
+                is Result.Error -> {
+                    error = "Failed to load vehicles"
+                    isLoading = false
+                }
+            }
+        }
+    }
+
+    // Also react to booking ID changes (in case it's set elsewhere)
+    LaunchedEffect(bookingId) {
+        val currentBookingId = bookingId
+        if (currentBookingId != null && allDeals.isEmpty() && !isLoading) {
+            // Only reload if we don't have deals yet and we're not already loading
+            isLoading = true
+            when (val result = repository.getAvailableVehicles(currentBookingId)) {
+                is Result.Success -> {
+                    allDeals = result.data.deals
+                    isLoading = false
+                }
+                is Result.Error -> {
+                    error = "Failed to load vehicles"
+                    isLoading = false
+                }
             }
         }
     }

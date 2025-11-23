@@ -5,12 +5,17 @@ import dto.AvailableVehiclesDto
 import dto.BookingDto
 import dto.CreateBookingDto
 import dto.ProtectionPackagesDto
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.http.*
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.network.sockets.ConnectTimeoutException
+import io.ktor.client.network.sockets.SocketTimeoutException
+import io.ktor.client.request.get
+import io.ktor.client.request.post
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import io.ktor.util.network.UnresolvedAddressException
+import kotlinx.io.IOException
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import utils.NetworkError
@@ -234,9 +239,9 @@ class SixtApiImpl(private val client: HttpClient) : SixtApi {
             ) {
                 contentType(ContentType.Application.Json)
             }
-            
+
             println("DEBUG: Complete Booking Status: ${response.status.value}")
-            
+
             when(response.status.value) {
                 in 200..299 -> {
                     val bodyText = response.bodyAsText()
@@ -256,14 +261,43 @@ class SixtApiImpl(private val client: HttpClient) : SixtApi {
                 }
             }
         } catch (e: UnresolvedAddressException) {
+            println("DEBUG: Complete Booking failed - UnresolvedAddressException: ${e.message}")
             Result.Error(NetworkError.NO_INTERNET)
+        } catch (e: ConnectTimeoutException) {
+            println("DEBUG: Complete Booking failed - ConnectTimeoutException: ${e.message}")
+            Result.Error(NetworkError.NO_INTERNET)
+        } catch (e: SocketTimeoutException) {
+            println("DEBUG: Complete Booking failed - SocketTimeoutException: ${e.message}")
+            Result.Error(NetworkError.REQUEST_TIMEOUT)
+        } catch (e: IOException) {
+            println("DEBUG: Complete Booking failed - IOException: ${e.message}")
+            e.printStackTrace()
+            // Check if it's a connection-related error
+            val message = e.message?.lowercase() ?: ""
+            when {
+                message.contains("timeout") || message.contains("timed out") ->
+                    Result.Error(NetworkError.REQUEST_TIMEOUT)
+                message.contains("connection") || message.contains("network") || message.contains("unreachable") ->
+                    Result.Error(NetworkError.NO_INTERNET)
+                else -> Result.Error(NetworkError.UNKNOWN)
+            }
         } catch (e: SerializationException) {
-            println("DEBUG: Serialization Exception: $e")
+            println("DEBUG: Complete Booking failed - SerializationException: ${e.message}")
+            e.printStackTrace()
             Result.Error(NetworkError.SERIALIZATION)
         } catch (e: Exception) {
-            println("DEBUG: Unknown Exception: $e")
+            println("DEBUG: Complete Booking failed - Unknown Exception: ${e}: ${e.message}")
             e.printStackTrace()
-            Result.Error(NetworkError.UNKNOWN)
+            // Check exception message for connection-related keywords
+            val message = e.message?.lowercase() ?: ""
+            when {
+                message.contains("timeout") || message.contains("timed out") -> 
+                    Result.Error(NetworkError.REQUEST_TIMEOUT)
+                message.contains("connection") || message.contains("network") || message.contains("unreachable") || 
+                message.contains("failed to connect") || message.contains("connection refused") -> 
+                    Result.Error(NetworkError.NO_INTERNET)
+                else -> Result.Error(NetworkError.UNKNOWN)
+            }
         }
     }
 

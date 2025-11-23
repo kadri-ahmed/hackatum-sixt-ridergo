@@ -18,7 +18,8 @@ import models.DestinationContext
 class ChatViewModel(
     private val chatRepository: ChatRepository,
     private val storage: utils.Storage,
-    private val vehiclesRepository: repositories.VehiclesRepository
+    private val vehiclesRepository: repositories.VehiclesRepository,
+    private val bookingFlowViewModel: BookingFlowViewModel
 ) : ViewModel() {
 
     private val _messages = MutableStateFlow<List<ChatMessage>>(
@@ -56,8 +57,20 @@ class ChatViewModel(
 
         viewModelScope.launch {
             try {
+                // Get booking ID from BookingFlowViewModel
+                val bookingId = bookingFlowViewModel.bookingId.value
+                if (bookingId == null) {
+                    // If no booking ID, create one or show error
+                    _messages.value = _messages.value + ChatMessage(
+                        "Please start a booking first by searching for a vehicle.",
+                        isUser = false
+                    )
+                    _isLoading.value = false
+                    return@launch
+                }
+                
                 // Get available vehicles and recommendations
-                val vehiclesResult = vehiclesRepository.getAvailableVehicles("mock_booking_id")
+                val vehiclesResult = vehiclesRepository.getAvailableVehicles(bookingId)
                 val availableDeals = if (vehiclesResult is utils.Result.Success) {
                     vehiclesResult.data.deals
                 } else {
