@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,11 +34,9 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import dto.UpsellReason
-import network.api.SixtApi
-import network.api.SixtApiImpl
 import repositories.VehiclesRepository
-import repositories.VehiclesRepositoryImpl
 import ui.components.SwipeableVehicleCard
+import ui.components.SwipeableChatCard
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.ViewCarousel
@@ -61,39 +60,50 @@ fun HomeScreen(
     navigateToProfile: (Int, Boolean) -> Unit,
     navigateToSearch: (String) -> Unit,
     navigateToTripDetails: () -> Unit,
+    navigateToChat: () -> Unit,
     popBackStack: () -> Unit,
     popUpToLogin: () -> Unit,
 ) {
     // Dependency Injection (Simplified for this step)
-    // Dependency Injection (Simplified for this step)
-    val client = remember { 
-        HttpClient {
-            install(ContentNegotiation) {
-                json(Json {
-                    ignoreUnknownKeys = true
-                    prettyPrint = true
-                    isLenient = true
-                })
-            }
-        } 
-    }
-    val api = remember { SixtApiImpl(client) }
-    val repository = remember<VehiclesRepository> { VehiclesRepositoryImpl(api) }
+    // Dependency Injection
+    val bookingFlowViewModel: viewmodels.BookingFlowViewModel = org.koin.compose.koinInject()
+    val vehiclesRepository: repositories.VehiclesRepository = org.koin.compose.koinInject()
+    val bookingRepository: repositories.BookingRepository = org.koin.compose.koinInject()
 
     var allDeals by remember { mutableStateOf<List<Deal>>(emptyList()) }
     var selectedContext by remember { mutableStateOf<ContextFilter>(ContextFilter.All) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
 
+    val homeVisitCount by bookingFlowViewModel.homeVisitCount.collectAsState()
+
     LaunchedEffect(Unit) {
-        when (val result = repository.getAvailableVehicles("mock_booking_id")) {
-            is Result.Success -> {
-                allDeals = result.data.deals
-                isLoading = false
+        bookingFlowViewModel.incrementHomeVisitCount()
+        var bookingId = bookingFlowViewModel.bookingId.value
+        if (bookingId == null) {
+            when (val result = bookingRepository.createBooking()) {
+                is Result.Success -> {
+                    bookingId = result.data.id
+                    bookingFlowViewModel.setBookingId(bookingId)
+                }
+                is Result.Error -> {
+                    error = "Failed to create booking session"
+                    isLoading = false
+                    return@LaunchedEffect
+                }
             }
-            is Result.Error -> {
-                error = "Failed to load vehicles"
-                isLoading = false
+        }
+        
+        if (bookingId != null) {
+            when (val result = vehiclesRepository.getAvailableVehicles(bookingId)) {
+                is Result.Success -> {
+                    allDeals = result.data.deals
+                    isLoading = false
+                }
+                is Result.Error -> {
+                    error = "Failed to load vehicles"
+                    isLoading = false
+                }
             }
         }
     }
@@ -122,6 +132,20 @@ fun HomeScreen(
     }
 
     var selectedVehicleForInfo by remember { mutableStateOf<Deal?>(null) }
+    
+    // Chat card logic: Show on 1st visit, then every 3rd visit (1, 4, 7...)
+    // Note: homeVisitCount starts at 0, increments to 1 on first composition
+    val shouldShowChatCard = (homeVisitCount % 3 == 1)
+    var isChatCardDismissed by remember { mutableStateOf(false) }
+    
+    // Reset dismissal when the frequency condition changes (e.g. new visit)
+    LaunchedEffect(shouldShowChatCard) {
+        if (shouldShowChatCard) {
+            isChatCardDismissed = false
+        }
+    }
+
+    val showChatCard = shouldShowChatCard && !isChatCardDismissed
 
     Column(
         modifier = Modifier
@@ -141,7 +165,9 @@ fun HomeScreen(
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.weight(1f)
             )
-            androidx.compose.material3.IconButton(onClick = { navigateToSearch("mock_booking_id") }) {
+            androidx.compose.material3.IconButton(onClick = { 
+                bookingFlowViewModel.bookingId.value?.let { id -> navigateToSearch(id) } 
+            }) {
                 androidx.compose.material3.Icon(
                     androidx.compose.material.icons.Icons.Default.Search,
                     contentDescription = "Search"
@@ -201,6 +227,7 @@ fun HomeScreen(
                     ) { targetMode ->
                         if (targetMode) {
                             Box(modifier = Modifier.fillMaxSize()) {
+                                // Render vehicle cards first (bottom of stack)
                                 swipeableDeals.reversed().forEach { deal ->
                                     androidx.compose.runtime.key(deal.vehicle.id) {
                                         SwipeableVehicleCard(
@@ -213,7 +240,23 @@ fun HomeScreen(
                                                 onVehicleSelect(deal)
                                                 swipeableDeals = swipeableDeals.drop(1)
                                             },
-                                            onLongClick = { selectedVehicleForInfo = deal }
+                                            onLongClick = { selectedVehicleForInfo = deal },
+                                            shouldAnimate = !(showChatCard && selectedContext == ContextFilter.All)
+                                        )
+                                    }
+                                }
+                                
+                                // Render chat card last so it appears on top
+                                if (showChatCard && selectedContext == ContextFilter.All) {
+                                    androidx.compose.runtime.key("chat_card") {
+                                        SwipeableChatCard(
+                                            onSwipeLeft = {
+                                                isChatCardDismissed = true
+                                            },
+                                            onSwipeRight = {
+                                                navigateToChat()
+                                                isChatCardDismissed = true
+                                            }
                                         )
                                     }
                                 }

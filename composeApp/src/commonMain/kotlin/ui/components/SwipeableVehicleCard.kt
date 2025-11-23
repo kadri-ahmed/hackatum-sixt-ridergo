@@ -66,12 +66,65 @@ fun SwipeableVehicleCard(
     onSwipeLeft: () -> Unit,
     onSwipeRight: () -> Unit,
     onLongClick: (() -> Unit)? = null,
+    shouldAnimate: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val offsetX = remember { androidx.compose.animation.core.Animatable(0f) }
     val offsetY = remember { androidx.compose.animation.core.Animatable(0f) }
     val rotation = remember { androidx.compose.animation.core.Animatable(0f) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
+
+    // Random "jumpy" animation to indicate swipeability
+    androidx.compose.runtime.LaunchedEffect(shouldAnimate) {
+        if (!shouldAnimate) return@LaunchedEffect
+        while (true) {
+            // Wait for a random interval between 5 and 10 seconds
+            kotlinx.coroutines.delay(kotlin.random.Random.nextLong(5000, 10000))
+            
+            // Only animate if not currently being dragged
+            if (offsetX.value == 0f) {
+                launch {
+                    val peekDirection = if (kotlin.random.Random.nextBoolean()) 1f else -1f
+                    val peekDistance = 50f * peekDirection
+                    val peekRotation = 3f * peekDirection
+
+                    // Peek out
+                    val peekJobs = listOf(
+                        launch {
+                            offsetX.animateTo(
+                                targetValue = peekDistance,
+                                animationSpec = androidx.compose.animation.core.tween(300, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                            )
+                        },
+                        launch {
+                            rotation.animateTo(
+                                targetValue = peekRotation,
+                                animationSpec = androidx.compose.animation.core.tween(300, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                            )
+                        }
+                    )
+                    peekJobs.forEach { it.join() }
+
+                    // Return
+                    val returnJobs = listOf(
+                        launch {
+                            offsetX.animateTo(
+                                targetValue = 0f,
+                                animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessLow)
+                            )
+                        },
+                        launch {
+                            rotation.animateTo(
+                                targetValue = 0f,
+                                animationSpec = androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessLow)
+                            )
+                        }
+                    )
+                    returnJobs.forEach { it.join() }
+                }
+            }
+        }
+    }
 
     Box(
         modifier = modifier

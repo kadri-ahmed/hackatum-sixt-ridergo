@@ -32,6 +32,7 @@ enum class MainTab(val title: String, val icon: androidx.compose.ui.graphics.vec
     Profile("Profile", Icons.Default.Person, Screen.Profile.route)
 }
 
+@androidx.compose.foundation.ExperimentalFoundationApi
 @Composable
 fun MainScreen(
     isDarkTheme: Boolean,
