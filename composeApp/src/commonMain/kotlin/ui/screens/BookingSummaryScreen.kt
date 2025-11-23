@@ -208,7 +208,28 @@ fun BookingSummaryScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Back to Home", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text("Confirm Booking", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        }
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Button(
+                            onClick = { 
+                                // Save for later logic
+                                // Ideally this should be in ViewModel, but for speed we can do it here or call a VM function
+                                // Since we need to update ViewModel first, let's assume we add a save function there.
+                                viewModel.saveBookingForLater()
+                                onConfirm() // Navigate back to home
+                            },
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                        ) {
+                            Text("Save for Later", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

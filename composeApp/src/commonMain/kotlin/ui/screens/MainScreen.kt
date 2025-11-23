@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -28,6 +29,7 @@ import ui.theme.SixtOrange
 
 enum class MainTab(val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val route: String) {
     Home("Home", Icons.Default.Home, Screen.Home.route),
+    Bookings("Bookings", Icons.AutoMirrored.Filled.List, Screen.BookingList.route),
     Chat("Chat", Icons.Default.Email, Screen.Chat.route),
     Profile("Profile", Icons.Default.Person, Screen.Profile.route)
 }

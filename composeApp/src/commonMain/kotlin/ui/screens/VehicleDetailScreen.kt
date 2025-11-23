@@ -289,12 +289,26 @@ fun VehicleDetailScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 if (!isLoading) {
+                    val selectedAddons = bookingFlowViewModel.selectedAddons.collectAsState().value
+                    
                     addons.forEach { category ->
                         category.options.take(3).forEach { option ->
+                            val isSelected = selectedAddons.contains(option.chargeDetail.id)
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 8.dp),
+                                    .padding(vertical = 8.dp)
+                                    .clickable { bookingFlowViewModel.toggleAddon(option.chargeDetail.id) }
+                                    .background(
+                                        if (isSelected) SixtOrange.copy(alpha = 0.05f) else Color.Transparent,
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .border(
+                                        width = if (isSelected) 1.dp else 0.dp,
+                                        color = if (isSelected) SixtOrange else Color.Transparent,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .padding(8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Box(
@@ -322,9 +336,9 @@ fun VehicleDetailScreen(
                                 }
                                 Icon(
                                     Icons.Default.Check, 
-                                    contentDescription = "Add",
-                                    tint = MaterialTheme.colorScheme.primary, // Placeholder for selection state
-                                    modifier = Modifier.alpha(0.3f) // Dimmed for now as we haven't implemented addon selection
+                                    contentDescription = if (isSelected) "Selected" else "Add",
+                                    tint = if (isSelected) SixtOrange else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                                    modifier = Modifier.alpha(if (isSelected) 1f else 0.3f)
                                 )
                             }
                         }

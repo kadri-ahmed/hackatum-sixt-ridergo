@@ -26,17 +26,17 @@ val appModule = module {
     single<VehiclesRepository> { VehiclesRepositoryImpl(get()) }
     single<ChatRepository> { ChatRepositoryImpl(get()) }
 
+    single<repositories.SavedBookingRepository> { repositories.SavedBookingRepositoryImpl() }
+    
     viewModel { viewmodels.SearchViewModel(get(), get(), get()) }
     viewModel { viewmodels.VehicleListViewModel(get(), get()) }
     viewModel { viewmodels.ProtectionViewModel(get(), get()) }
-    viewModel { viewmodels.BookingSummaryViewModel(get(), get()) }
+    viewModel { viewmodels.BookingSummaryViewModel(get(), get(), get()) }
     viewModel { viewmodels.ChatViewModel(get(), get(), get()) }
     
-    // Shared state for booking flow
     // Shared state for booking flow
     single { viewmodels.BookingFlowViewModel(get()) }
 
     // Persistence
-
     single<utils.Storage> { utils.StorageImpl(get<Settings>()) }
 }

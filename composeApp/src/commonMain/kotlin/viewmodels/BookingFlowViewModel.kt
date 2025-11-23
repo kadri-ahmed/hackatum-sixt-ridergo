@@ -29,6 +29,9 @@ class BookingFlowViewModel(
         _homeVisitCount.value += 1
     }
 
+    private val _selectedAddons = MutableStateFlow<Set<String>>(emptySet())
+    val selectedAddons: StateFlow<Set<String>> = _selectedAddons.asStateFlow()
+
     fun setBookingId(id: String) {
         _bookingId.value = id
     }
@@ -44,6 +47,17 @@ class BookingFlowViewModel(
         }
     }
     
+    fun toggleAddon(addonId: String) {
+        val current = _selectedAddons.value.toMutableSet()
+        if (current.contains(addonId)) {
+            current.remove(addonId)
+        } else {
+            current.add(addonId)
+        }
+        _selectedAddons.value = current
+        // Note: API integration for addons would go here if available
+    }
+    
     fun selectVehicle(vehicleId: String) {
         val currentBookingId = _bookingId.value
         if (currentBookingId != null) {
@@ -56,5 +70,6 @@ class BookingFlowViewModel(
     fun clearBooking() {
         _bookingId.value = null
         _selectedProtectionPackageId.value = null
+        _selectedAddons.value = emptySet()
     }
 }

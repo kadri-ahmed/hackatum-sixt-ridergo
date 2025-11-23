@@ -20,6 +20,7 @@ sealed class Screen(val route: String) {
     // object Protection : Screen("protection")
     object BookingSummary : Screen("booking_summary")
     object TripDetails : Screen("trip_details")
+    object BookingList : Screen("booking_list")
 }
 
 @androidx.compose.foundation.ExperimentalFoundationApi
@@ -91,6 +92,15 @@ fun NavGraph(
                 onToggleTheme = onToggleTheme
             )
         }
+        composable(Screen.BookingList.route) {
+            ui.screens.BookingListScreen(
+                onBack = { navController.popBackStack() },
+                onBookingSelected = {
+                    navController.navigate(Screen.VehicleDetail.route)
+                }
+            )
+        }
+        
         composable(Screen.VehicleDetail.route) {
             if (selectedVehicle != null) {
                 VehicleDetailScreen(
