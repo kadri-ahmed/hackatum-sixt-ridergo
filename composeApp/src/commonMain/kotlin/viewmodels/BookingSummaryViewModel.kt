@@ -5,16 +5,22 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import dto.BookingStatus
+import dto.SavedBooking
 import repositories.BookingRepository
+import repositories.SavedBookingRepository
 import ui.state.BookingSummaryUiState
 import utils.NetworkError
 import utils.Result
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 class BookingSummaryViewModel(
     private val bookingRepository: BookingRepository,
     private val bookingFlowViewModel: BookingFlowViewModel,
-    private val savedBookingRepository: repositories.SavedBookingRepository
+    private val savedBookingRepository: SavedBookingRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<BookingSummaryUiState>(BookingSummaryUiState.Loading)
@@ -30,7 +36,7 @@ class BookingSummaryViewModel(
             
             when (val result = bookingRepository.getBooking(bookingId)) {
                 is Result.Success -> {
-                    _uiState.value = BookingSummaryUiState.Success(result.data)
+                    _uiState.value = BookingSummaryUiState.Loaded(result.data)
                 }
                 is Result.Error -> {
                     val errorMessage = mapError(result.error)
@@ -40,45 +46,21 @@ class BookingSummaryViewModel(
         }
     }
 
+    @OptIn(ExperimentalTime::class)
     fun confirmBooking(onConfirmed: () -> Unit) {
         viewModelScope.launch {
             val bookingId = bookingFlowViewModel.bookingId.value ?: run {
                 _uiState.value = BookingSummaryUiState.Error("No booking found")
                 return@launch
             }
+            
             _uiState.value = BookingSummaryUiState.Loading
             
             when (val result = bookingRepository.completeBooking(bookingId)) {
                 is Result.Success -> {
-                    _uiState.value = BookingSummaryUiState.Success(result.data)
-                    
-                    // Save as confirmed booking
-                    val booking = result.data
-                    val vehicle = booking.selectedVehicle
-                    if (vehicle != null) {
-                        val vehiclePrice = vehicle.pricing.totalPrice.amount
-                        val protectionPrice = booking.protectionPackages?.price?.totalPrice?.amount 
-                            ?: booking.protectionPackages?.price?.displayPrice?.amount 
-                            ?: 0.0
-                        val totalAmount = vehiclePrice + protectionPrice
-                        val currency = vehicle.pricing.totalPrice.currency
-                        
-                        val savedBooking = dto.SavedBooking(
-                            id = kotlinx.datetime.Clock.System.now().toEpochMilliseconds().toString(),
-                            bookingId = booking.id,
-                            vehicle = vehicle,
-                            protectionPackage = booking.protectionPackages,
-                            addonIds = bookingFlowViewModel.selectedAddons.value,
-                            timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
-                            totalPrice = totalAmount,
-                            currency = currency,
-                            status = dto.BookingStatus.CONFIRMED
-                        )
-                        savedBookingRepository.saveBooking(savedBooking)
-                    }
-                    
+                    _uiState.value = BookingSummaryUiState.Confirmed(result.data)
+                    saveConfirmedBooking(result.data)
                     bookingFlowViewModel.clearBooking()
-                    onConfirmed()
                 }
                 is Result.Error -> {
                     val errorMessage = mapError(result.error)
@@ -87,11 +69,42 @@ class BookingSummaryViewModel(
             }
         }
     }
+
+    @OptIn(ExperimentalTime::class)
+    private suspend fun saveConfirmedBooking(booking: dto.BookingDto) {
+        val vehicle = booking.selectedVehicle
+        if (vehicle != null) {
+            val vehiclePrice = vehicle.pricing.totalPrice.amount
+            val protectionPrice = booking.protectionPackages?.price?.totalPrice?.amount 
+                ?: booking.protectionPackages?.price?.displayPrice?.amount 
+                ?: 0.0
+            val totalAmount = vehiclePrice + protectionPrice
+            val currency = vehicle.pricing.totalPrice.currency
+            
+            // Check if we already have a saved booking for this ID
+            val existingBooking = savedBookingRepository.getSavedBookings().first().find { it.bookingId == booking.id }
+            val savedBookingId = existingBooking?.id ?: Clock.System.now().toEpochMilliseconds().toString()
+
+            val savedBooking = SavedBooking(
+                id = savedBookingId,
+                bookingId = booking.id,
+                vehicle = vehicle,
+                protectionPackage = booking.protectionPackages,
+                addonIds = bookingFlowViewModel.selectedAddons.value,
+                timestamp = Clock.System.now().toEpochMilliseconds(),
+                totalPrice = totalAmount,
+                currency = currency,
+                status = BookingStatus.CONFIRMED
+            )
+            savedBookingRepository.saveBooking(savedBooking)
+        }
+    }
     
+    @OptIn(ExperimentalTime::class)
     fun saveBookingForLater() {
         viewModelScope.launch {
             val currentState = _uiState.value
-            if (currentState is BookingSummaryUiState.Success) {
+            if (currentState is BookingSummaryUiState.Loaded) {
                 val booking = currentState.booking
                 val vehicle = booking.selectedVehicle
                 
@@ -103,19 +116,20 @@ class BookingSummaryViewModel(
                     val totalAmount = vehiclePrice + protectionPrice
                     val currency = vehicle.pricing.totalPrice.currency
                     
-                    val savedBooking = dto.SavedBooking(
-                        id = kotlinx.datetime.Clock.System.now().toEpochMilliseconds().toString(),
+                    val savedBooking = SavedBooking(
+                        id = Clock.System.now().toEpochMilliseconds().toString(),
                         bookingId = booking.id,
                         vehicle = vehicle,
                         protectionPackage = booking.protectionPackages,
                         addonIds = bookingFlowViewModel.selectedAddons.value,
-                        timestamp = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
+                        timestamp = Clock.System.now().toEpochMilliseconds(),
                         totalPrice = totalAmount,
                         currency = currency,
-                        status = dto.BookingStatus.DRAFT
+                        status = BookingStatus.DRAFT
                     )
                     savedBookingRepository.saveBooking(savedBooking)
                     bookingFlowViewModel.clearBooking()
+                    _uiState.value = BookingSummaryUiState.Saved(booking)
                 }
             }
         }

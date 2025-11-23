@@ -37,8 +37,13 @@ enum class MainTab(val title: String, val icon: androidx.compose.ui.graphics.vec
 @androidx.compose.foundation.ExperimentalFoundationApi
 @Composable
 fun MainScreen(
+    startDestination: String,
     isDarkTheme: Boolean,
-    onToggleTheme: () -> Unit
+    onToggleTheme: () -> Unit,
+    isDemoMode: Boolean,
+    onToggleDemoMode: () -> Unit,
+    apiKey: String,
+    onApiKeyChange: (String) -> Unit
 ) {
     val navController = rememberNavController()
     var selectedVehicle by remember { mutableStateOf<Deal?>(null) }
@@ -50,9 +55,11 @@ fun MainScreen(
             
             // Hide bottom bar on detail screens if needed, or keep it.
             // For now, we show it unless it's a full screen flow.
-            val isDetailScreen = currentDestination?.route == Screen.VehicleDetail.route
+            // Hide bottom bar on detail screens and signup
+            val currentRoute = currentDestination?.route
+            val shouldShowBottomBar = currentRoute != Screen.VehicleDetail.route && currentRoute != Screen.Signup.route
             
-            if (!isDetailScreen) {
+            if (shouldShowBottomBar) {
                 NavigationBar(
                     containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface,
                 ) {
@@ -84,10 +91,16 @@ fun MainScreen(
         androidx.compose.foundation.layout.Box(modifier = Modifier.padding(paddingValues)) {
             NavGraph(
                 navController = navController,
-                onVehicleSelect = { deal -> selectedVehicle = deal },
-                selectedVehicle = selectedVehicle,
+                startDestination = startDestination,
+                onVehicleSelect = { deal ->
+                    selectedVehicle = deal
+                },selectedVehicle = selectedVehicle,
                 isDarkTheme = isDarkTheme,
-                onToggleTheme = onToggleTheme
+                onToggleTheme = onToggleTheme,
+                isDemoMode = isDemoMode,
+                onToggleDemoMode = onToggleDemoMode,
+                apiKey = apiKey,
+                onApiKeyChange = onApiKeyChange
             )
         }
     }

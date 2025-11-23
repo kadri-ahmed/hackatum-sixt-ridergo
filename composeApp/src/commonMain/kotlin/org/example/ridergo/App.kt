@@ -15,9 +15,18 @@ import kotlin.random.Random
 
 @androidx.compose.foundation.ExperimentalFoundationApi
 @Composable
-fun App(bookingRepository: BookingRepository, vehiclesRepository: VehiclesRepository) {
-    var isDarkTheme by remember { mutableStateOf(true) } // Default to dark
+fun App(
+    bookingRepository: BookingRepository, 
+    vehiclesRepository: VehiclesRepository,
+    storage: utils.Storage = org.koin.compose.koinInject(),
+    userRepository: repositories.UserRepository = org.koin.compose.koinInject()
+) {
+    var isDarkTheme by remember { mutableStateOf(storage.getPreference("is_dark_theme") != "false") } // Default to true (dark) if not set
     var showEasterEgg by remember { mutableStateOf(false) }
+    var isDemoMode by remember { mutableStateOf(storage.getPreference("live_demo_enabled") == "true") }
+    var groqApiKey by remember { mutableStateOf(storage.getPreference("groq_api_key") ?: "") }
+
+    val startDestination = if (userRepository.hasProfile()) ui.navigation.Screen.Home.route else ui.navigation.Screen.Signup.route
 
     fun toggleTheme() {
         if (isDarkTheme) {
@@ -28,17 +37,31 @@ fun App(bookingRepository: BookingRepository, vehiclesRepository: VehiclesReposi
                 showEasterEgg = true
             } else {
                 isDarkTheme = false
+                storage.savePreference("is_dark_theme", "false")
             }
         } else {
             // Switching from Light to Dark is always allowed
             isDarkTheme = true
+            storage.savePreference("is_dark_theme", "true")
         }
     }
 
     AppTheme(darkTheme = isDarkTheme) {
         MainScreen(
+            startDestination = startDestination,
             isDarkTheme = isDarkTheme,
-            onToggleTheme = { toggleTheme() }
+            onToggleTheme = { toggleTheme() },
+            isDemoMode = isDemoMode,
+            onToggleDemoMode = { 
+                val newMode = !isDemoMode
+                isDemoMode = newMode
+                storage.savePreference("live_demo_enabled", newMode.toString())
+            },
+            apiKey = groqApiKey,
+            onApiKeyChange = { newKey ->
+                groqApiKey = newKey
+                storage.savePreference("groq_api_key", newKey)
+            }
         )
 
         SlideUpComponent(

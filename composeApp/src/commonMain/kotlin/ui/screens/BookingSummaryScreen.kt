@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,13 +43,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import ui.common.ErrorView
+import ui.common.LoadingIndicator
 import ui.common.SixtCard
+import ui.state.BookingSummaryUiState
 import ui.theme.SixtOrange
+import viewmodels.BookingSummaryViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
-@androidx.compose.foundation.ExperimentalFoundationApi
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BookingSummaryScreen(
-    viewModel: viewmodels.BookingSummaryViewModel = org.koin.compose.viewmodel.koinViewModel(),
+    viewModel: BookingSummaryViewModel = koinViewModel(),
     onConfirm: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -62,178 +68,235 @@ fun BookingSummaryScreen(
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             when (val state = uiState) {
-                is ui.state.BookingSummaryUiState.Loading -> {
-                    ui.common.LoadingIndicator(message = "Finalizing your booking...")
+                is BookingSummaryUiState.Loading -> {
+                    LoadingIndicator(message = "Finalizing your booking...")
                 }
-                is ui.state.BookingSummaryUiState.Error -> {
-                    ui.common.ErrorView(
+                is BookingSummaryUiState.Error -> {
+                    ErrorView(
                         message = state.message,
                         onRetry = { viewModel.loadBooking() },
                         onCancel = { onConfirm() },
                         cancelText = "Back to Home"
                     )
                 }
-                is ui.state.BookingSummaryUiState.Success -> {
+                is BookingSummaryUiState.Loaded -> {
                     val booking = state.booking
-                    val vehicle = booking.selectedVehicle?.vehicle
-                    
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        // Success Animation
-                        val infiniteTransition = rememberInfiniteTransition()
-                        val scale by infiniteTransition.animateFloat(
-                            initialValue = 1f,
-                            targetValue = 1.1f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(1000, easing = LinearEasing),
-                                repeatMode = RepeatMode.Reverse
-                            )
-                        )
+                    BookingSummaryContent(
+                        booking = booking,
+                        onConfirm = { viewModel.confirmBooking(onConfirm) },
+                        onSaveForLater = { 
+                            viewModel.saveBookingForLater()
+                            // onConfirm() // Don't navigate back immediately, show success state
+                        }
+                    )
+                }
+                is BookingSummaryUiState.Confirmed -> {
+                    SuccessView(
+                        title = "Booking Confirmed!",
+                        subtitle = "Your ride is ready.",
+                        onDone = onConfirm
+                    )
+                }
+                is BookingSummaryUiState.Saved -> {
+                    SuccessView(
+                        title = "Booking Saved!",
+                        subtitle = "You can resume it later.",
+                        onDone = onConfirm
+                    )
+                }
+            }
+        }
+    }
+}
 
-                        Box(
-                            modifier = Modifier
-                                .size(120.dp)
-                                .scale(scale)
-                                .background(SixtOrange.copy(alpha = 0.1f), CircleShape)
-                                .padding(24.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.Check,
+@Composable
+fun SuccessView(
+    title: String,
+    subtitle: String,
+    onDone: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        // Success Animation
+        val infiniteTransition = rememberInfiniteTransition()
+        val scale by infiniteTransition.animateFloat(
+            initialValue = 1f,
+            targetValue = 1.1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1000, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            )
+        )
+
+        Box(
+            modifier = Modifier
+                .size(120.dp)
+                .scale(scale)
+                .background(SixtOrange.copy(alpha = 0.1f), CircleShape)
+                .padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Default.Check,
+                contentDescription = null,
+                tint = SixtOrange,
+                modifier = Modifier.size(64.dp)
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        
+        Spacer(modifier = Modifier.height(48.dp))
+        
+        Button(
+            onClick = onDone,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text("Done", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun BookingSummaryContent(
+    booking: dto.BookingDto,
+    onConfirm: () -> Unit,
+    onSaveForLater: () -> Unit
+) {
+    val vehicle = booking.selectedVehicle?.vehicle
+    
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Booking Summary",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.align(Alignment.Start)
+        )
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Summary Card
+        SixtCard(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                if (vehicle != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (vehicle.images.isNotEmpty()) {
+                            AsyncImage(
+                                model = vehicle.images.first(),
                                 contentDescription = null,
-                                tint = SixtOrange,
-                                modifier = Modifier.size(64.dp)
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop
                             )
                         }
-                        
-                        Spacer(modifier = Modifier.height(32.dp))
-                        
-                        Text(
-                            text = "Booking Confirmed!",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Your ride is ready.",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        
-                        Spacer(modifier = Modifier.height(48.dp))
-                        
-                        // Summary Card
-                        SixtCard(modifier = Modifier.fillMaxWidth()) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                if (vehicle != null) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        if (vehicle.images.isNotEmpty()) {
-                                            AsyncImage(
-                                                model = vehicle.images.first(),
-                                                contentDescription = null,
-                                                modifier = Modifier
-                                                    .size(80.dp)
-                                                    .clip(RoundedCornerShape(8.dp)),
-                                                contentScale = ContentScale.Crop
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.width(16.dp))
-                                        Column {
-                                            Text(
-                                                "${vehicle.brand} ${vehicle.model}",
-                                                fontWeight = FontWeight.Bold,
-                                                style = MaterialTheme.typography.titleMedium
-                                            )
-                                            Text(
-                                                vehicle.groupType,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                }
-                                
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(1.dp)
-                                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text("Protection", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text(
-                                        booking.protectionPackages?.name ?: "None",
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
-                                
-                                Spacer(modifier = Modifier.height(8.dp))
-                                
-                                val vehiclePrice = booking.selectedVehicle?.pricing?.totalPrice?.amount ?: 0.0
-                                val protectionPrice = booking.protectionPackages?.price?.totalPrice?.amount 
-                                    ?: booking.protectionPackages?.price?.displayPrice?.amount 
-                                    ?: 0.0
-                                val totalAmount = vehiclePrice + protectionPrice
-                                val currency = booking.selectedVehicle?.pricing?.totalPrice?.currency ?: "€"
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text("Total Price", fontWeight = FontWeight.Bold)
-                                    Text(
-                                        "$currency${"%.2f".format(totalAmount)}",
-                                        fontWeight = FontWeight.Bold,
-                                        color = SixtOrange
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.weight(1f))
-                        
-                        Button(
-                            onClick = { viewModel.confirmBooking(onConfirm) },
-                            modifier = Modifier.fillMaxWidth().height(56.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("Confirm Booking", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        }
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        Button(
-                            onClick = { 
-                                // Save for later logic
-                                // Ideally this should be in ViewModel, but for speed we can do it here or call a VM function
-                                // Since we need to update ViewModel first, let's assume we add a save function there.
-                                viewModel.saveBookingForLater()
-                                onConfirm() // Navigate back to home
-                            },
-                            modifier = Modifier.fillMaxWidth().height(56.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.surface,
-                                contentColor = MaterialTheme.colorScheme.onSurface
-                            ),
-                            shape = RoundedCornerShape(12.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-                        ) {
-                            Text("Save for Later", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(
+                                "${vehicle.brand} ${vehicle.model}",
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                vehicle.groupType,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Protection", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        booking.protectionPackages?.name ?: "None",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                val vehiclePrice = booking.selectedVehicle?.pricing?.totalPrice?.amount ?: 0.0
+                val protectionPrice = booking.protectionPackages?.price?.totalPrice?.amount 
+                    ?: booking.protectionPackages?.price?.displayPrice?.amount 
+                    ?: 0.0
+                val totalAmount = vehiclePrice + protectionPrice
+                val currency = booking.selectedVehicle?.pricing?.totalPrice?.currency ?: "€"
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Total Price", fontWeight = FontWeight.Bold)
+                    Text(
+                        "$currency$totalAmount",
+                        fontWeight = FontWeight.Bold,
+                        color = SixtOrange
+                    )
+                }
             }
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+        
+        Button(
+            onClick = onConfirm,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text("Confirm Booking", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Button(
+            onClick = onSaveForLater,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface
+            ),
+            shape = RoundedCornerShape(12.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+        ) {
+            Text("Save for Later", fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

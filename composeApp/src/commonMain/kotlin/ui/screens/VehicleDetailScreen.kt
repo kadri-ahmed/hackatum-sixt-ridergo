@@ -44,6 +44,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,6 +60,7 @@ import coil3.compose.AsyncImage
 import dto.AddonCategory
 import dto.Deal
 import dto.ProtectionPackageDto
+import kotlinx.coroutines.launch
 import repositories.VehiclesRepository
 import ui.theme.SixtOrange
 import utils.Result
@@ -80,6 +82,8 @@ fun VehicleDetailScreen(
     var selectedProtectionId by remember { mutableStateOf<String?>(null) }
     
     val bookingId = bookingFlowViewModel.bookingId.collectAsState().value
+
+    val isModifying = bookingFlowViewModel.isModifying.collectAsState().value
 
     LaunchedEffect(bookingId) {
         if (bookingId != null) {
@@ -132,19 +136,49 @@ fun VehicleDetailScreen(
                         )
                     }
                     
-                    Button(
-                        onClick = { 
-                            if (selectedProtectionId != null) {
-                                bookingFlowViewModel.setSelectedProtectionPackageId(selectedProtectionId!!)
-                            }
-                            bookingFlowViewModel.selectVehicle(deal.vehicle.id)
-                            onUpgrade(deal) 
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
-                        shape = RoundedCornerShape(12.dp),
-                        contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
-                    ) {
-                        Text("Book Now", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // Save for Later Button
+                        val scope = rememberCoroutineScope()
+                        val savedBookingRepository: repositories.SavedBookingRepository = org.koin.compose.koinInject()
+                        
+                        androidx.compose.material3.OutlinedButton(
+                            onClick = {
+                                scope.launch {
+                                    val selectedProtection = protectionPackages.find { it.id == selectedProtectionId }
+                                    bookingFlowViewModel.saveDraft(
+                                        vehicle = deal.vehicle,
+                                        pricing = deal.pricing,
+                                        protectionPackage = selectedProtection,
+                                        savedBookingRepository = savedBookingRepository
+                                    )
+                                    onBack() // Go back after saving
+                                }
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check, // Or a bookmark icon if available
+                                contentDescription = "Save",
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        Button(
+                            onClick = { 
+                                if (selectedProtectionId != null) {
+                                    bookingFlowViewModel.setSelectedProtectionPackageId(selectedProtectionId!!)
+                                }
+                                bookingFlowViewModel.selectVehicle(deal.vehicle.id)
+                                onUpgrade(deal) 
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
+                        ) {
+                            Text(if (isModifying) "Confirm" else "Book Now", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
                     }
                 }
             }

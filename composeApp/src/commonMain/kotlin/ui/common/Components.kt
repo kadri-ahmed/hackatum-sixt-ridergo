@@ -103,7 +103,8 @@ fun SixtInput(
     modifier: Modifier = Modifier,
     singleLine: Boolean = true,
     enabled: Boolean = true,
-    leadingIcon: androidx.compose.ui.graphics.vector.ImageVector? = null
+    leadingIcon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    keyboardOptions: androidx.compose.foundation.text.KeyboardOptions = androidx.compose.foundation.text.KeyboardOptions.Default
 ) {
     OutlinedTextField(
         value = value,
@@ -115,7 +116,8 @@ fun SixtInput(
         enabled = enabled,
         leadingIcon = if (leadingIcon != null) {
             { androidx.compose.material3.Icon(leadingIcon, contentDescription = null) }
-        } else null
+        } else null,
+        keyboardOptions = keyboardOptions
     )
 }
 

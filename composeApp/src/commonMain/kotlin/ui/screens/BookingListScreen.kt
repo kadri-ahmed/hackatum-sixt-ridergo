@@ -20,7 +20,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
+import kotlinx.coroutines.launch
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -47,7 +49,8 @@ import viewmodels.BookingFlowViewModel
 @Composable
 fun BookingListScreen(
     onBack: () -> Unit,
-    onBookingSelected: () -> Unit,
+    onBookingSelected: (dto.Deal) -> Unit,
+    onBookingDetail: (String) -> Unit,
     savedBookingRepository: SavedBookingRepository = org.koin.compose.koinInject(),
     bookingFlowViewModel: BookingFlowViewModel = org.koin.compose.koinInject()
 ) {
@@ -105,7 +108,14 @@ fun BookingListScreen(
                                     bookingFlowViewModel.setSelectedProtectionPackageId(booking.protectionPackage.id)
                                 }
                                 booking.addonIds.forEach { bookingFlowViewModel.toggleAddon(it) }
-                                onBookingSelected()
+                                bookingFlowViewModel.setModifying(true)
+                                onBookingSelected(booking.vehicle)
+                            },
+                            onDelete = {
+                                // Delete booking
+                                kotlinx.coroutines.GlobalScope.launch {
+                                    savedBookingRepository.deleteBooking(booking.id)
+                                }
                             }
                         )
                     }
@@ -124,7 +134,7 @@ fun BookingListScreen(
                         SavedBookingCard(
                             booking = booking,
                             onClick = {
-                                // View details (No-op for now, or show dialog)
+                                onBookingDetail(booking.id)
                             },
                             isConfirmed = true
                         )
@@ -139,7 +149,8 @@ fun BookingListScreen(
 fun SavedBookingCard(
     booking: SavedBooking,
     onClick: () -> Unit,
-    isConfirmed: Boolean = false
+    isConfirmed: Boolean = false,
+    onDelete: (() -> Unit)? = null
 ) {
     Box(
         modifier = Modifier
@@ -200,11 +211,21 @@ fun SavedBookingCard(
             }
             
             if (!isConfirmed) {
-                Icon(
-                    Icons.Default.ChevronRight,
-                    contentDescription = "Resume",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (onDelete != null) {
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                } else {
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        contentDescription = "Resume",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }

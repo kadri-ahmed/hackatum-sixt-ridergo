@@ -45,4 +45,11 @@ interface BookingRepository {
      * @return Result containing the completed booking or an error
      */
     suspend fun completeBooking(bookingId: String): Result<BookingDto, NetworkError>
+
+    /**
+     * Retrieves available protection packages for a booking.
+     * @param bookingId The ID of the booking
+     * @return Result containing the protection packages or an error
+     */
+    suspend fun getProtectionPackages(bookingId: String): Result<dto.ProtectionPackagesDto, NetworkError>
 }

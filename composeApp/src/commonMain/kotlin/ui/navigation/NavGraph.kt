@@ -21,6 +21,10 @@ sealed class Screen(val route: String) {
     object BookingSummary : Screen("booking_summary")
     object TripDetails : Screen("trip_details")
     object BookingList : Screen("booking_list")
+    object BookingDetail : Screen("booking_detail/{bookingId}") {
+        fun createRoute(bookingId: String) = "booking_detail/$bookingId"
+    }
+    object Signup : Screen("signup")
 }
 
 @androidx.compose.foundation.ExperimentalFoundationApi
@@ -31,12 +35,25 @@ fun NavGraph(
     onVehicleSelect: (Deal) -> Unit,
     selectedVehicle: Deal?,
     isDarkTheme: Boolean,
-    onToggleTheme: () -> Unit
+    onToggleTheme: () -> Unit,
+    isDemoMode: Boolean,
+    onToggleDemoMode: () -> Unit,
+    apiKey: String,
+    onApiKeyChange: (String) -> Unit
 ) {
     NavHost(
         navController = navController,
         startDestination = startDestination
     ) {
+        composable(Screen.Signup.route) {
+            ui.screens.SignupScreen(
+                onSignupComplete = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Signup.route) { inclusive = true }
+                    }
+                }
+            )
+        }
         composable(Screen.Home.route) {
             HomeScreen(
                 onVehicleSelect = { deal ->
@@ -79,26 +96,46 @@ fun NavGraph(
                 onVehicleSelect = { deal ->
                     onVehicleSelect(deal)
                     navController.navigate(Screen.VehicleDetail.route)
+                },
+                onBookingSaved = { bookingId ->
+                    navController.navigate(Screen.BookingDetail.createRoute(bookingId))
                 }
             )
         }
         composable(Screen.Profile.route) {
             ProfileScreen(
-                id = 0,
-                showDetails = true,
-                popBackStack = { navController.popBackStack() },
-                popUpToLogin = { },
                 isDarkTheme = isDarkTheme,
-                onToggleTheme = onToggleTheme
+                onToggleTheme = onToggleTheme,
+                isDemoMode = isDemoMode,
+                onToggleDemoMode = onToggleDemoMode,
+                apiKey = apiKey,
+                onApiKeyChange = onApiKeyChange
             )
         }
         composable(Screen.BookingList.route) {
             ui.screens.BookingListScreen(
                 onBack = { navController.popBackStack() },
-                onBookingSelected = {
+                onBookingSelected = { deal ->
+                    onVehicleSelect(deal)
                     navController.navigate(Screen.VehicleDetail.route)
+                },
+                onBookingDetail = { bookingId ->
+                    navController.navigate(Screen.BookingDetail.createRoute(bookingId))
                 }
             )
+        }
+        
+        composable(Screen.BookingDetail.route) { backStackEntry ->
+            val bookingId = backStackEntry.savedStateHandle.get<String>("bookingId")
+            
+            if (bookingId != null) {
+                ui.screens.BookingDetailScreen(
+                    bookingId = bookingId,
+                    onBack = { navController.popBackStack() }
+                )
+            } else {
+                androidx.compose.material3.Text("Error: Booking ID missing")
+            }
         }
         
         composable(Screen.VehicleDetail.route) {

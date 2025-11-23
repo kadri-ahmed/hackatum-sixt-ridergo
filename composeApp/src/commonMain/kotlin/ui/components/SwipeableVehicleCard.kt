@@ -287,7 +287,7 @@ fun SwipeableVehicleCard(
 
                             ) {
                             Text(
-                                text = "Select",
+                                text = "Swipe",
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                             )
