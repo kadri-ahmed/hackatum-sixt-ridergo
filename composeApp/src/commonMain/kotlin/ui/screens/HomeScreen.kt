@@ -58,9 +58,7 @@ import androidx.compose.animation.togetherWith
 import ui.components.VehicleCard
 import ui.components.VehicleQuickInfo
 import utils.Result
-import org.jetbrains.compose.resources.painterResource
-import ridergo.composeapp.generated.resources.Res
-import ridergo.composeapp.generated.resources.cleveride
+import ui.common.getLogoPainter
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -181,15 +179,16 @@ fun HomeScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Use SVG logo - adapts to dark/light mode
+            // Use platform-specific logo - adapts to dark/light mode
+            // Android: PNG (cleveride_android.png), iOS: SVG (cleveride.svg)
             // Logo is black, so in dark mode it should be white, in light mode it should be black
             val logoColor = MaterialTheme.colorScheme.onSurface // Adapts automatically: white in dark mode, black in light mode
             
             Image(
-                painter = painterResource(Res.drawable.cleveride),
+                painter = getLogoPainter(),
                 contentDescription = "Cleveride Logo",
                 modifier = Modifier
-                    .height(19.dp),
+                    .height(24.dp),
                 contentScale = ContentScale.Fit,
                 colorFilter = ColorFilter.tint(logoColor)
             )
