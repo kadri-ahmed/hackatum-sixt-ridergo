@@ -2,8 +2,6 @@ package config
 
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSBundle
-import platform.Foundation.NSDictionary
-import platform.Foundation.objectForKey
 
 @OptIn(ExperimentalForeignApi::class)
 actual fun getGroqApiKey(): String {

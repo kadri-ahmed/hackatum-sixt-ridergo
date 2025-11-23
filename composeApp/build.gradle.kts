@@ -58,7 +58,6 @@ kotlin {
             implementation(libs.bundles.ktor)
             implementation(libs.androidx.navigation3.ui)
             implementation(libs.androidx.compose.material3)
-            implementation(libs.androidx.navigation.compose)
             implementation(compose.materialIconsExtended)
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor)
