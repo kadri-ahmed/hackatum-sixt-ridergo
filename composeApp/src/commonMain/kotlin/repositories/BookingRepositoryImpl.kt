@@ -39,4 +39,8 @@ class BookingRepositoryImpl(
     override suspend fun completeBooking(bookingId: String): Result<BookingDto, NetworkError> {
         return api.completeBooking(bookingId)
     }
+
+    override suspend fun getProtectionPackages(bookingId: String): Result<dto.ProtectionPackagesDto, NetworkError> {
+        return api.getAvailableProtectionPackages(bookingId)
+    }
 }

@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import repositories.BookingRepository
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 class BookingFlowViewModel(
     private val bookingRepository: BookingRepository
@@ -29,6 +31,9 @@ class BookingFlowViewModel(
         _homeVisitCount.value += 1
     }
 
+    private val _selectedAddons = MutableStateFlow<Set<String>>(emptySet())
+    val selectedAddons: StateFlow<Set<String>> = _selectedAddons.asStateFlow()
+
     fun setBookingId(id: String) {
         _bookingId.value = id
     }
@@ -44,6 +49,17 @@ class BookingFlowViewModel(
         }
     }
     
+    fun toggleAddon(addonId: String) {
+        val current = _selectedAddons.value.toMutableSet()
+        if (current.contains(addonId)) {
+            current.remove(addonId)
+        } else {
+            current.add(addonId)
+        }
+        _selectedAddons.value = current
+        // Note: API integration for addons would go here if available
+    }
+    
     fun selectVehicle(vehicleId: String) {
         val currentBookingId = _bookingId.value
         if (currentBookingId != null) {
@@ -53,8 +69,63 @@ class BookingFlowViewModel(
         }
     }
     
+    private val _isModifying = MutableStateFlow(false)
+    val isModifying: StateFlow<Boolean> = _isModifying.asStateFlow()
+
+    fun setModifying(modifying: Boolean) {
+        _isModifying.value = modifying
+    }
+
     fun clearBooking() {
         _bookingId.value = null
         _selectedProtectionPackageId.value = null
+        _selectedAddons.value = emptySet()
+        _isModifying.value = false
+    }
+
+    @OptIn(ExperimentalTime::class)
+    suspend fun saveDraft(
+        vehicle: dto.Vehicle, 
+        pricing: dto.Pricing,
+        protectionPackage: dto.ProtectionPackageDto?,
+        availableAddons: List<dto.AddonCategory>,
+        savedBookingRepository: repositories.SavedBookingRepository
+    ) {
+        val currentBookingId = _bookingId.value
+        val idToSave = if (currentBookingId != null && _isModifying.value) currentBookingId else Clock.System.now().toEpochMilliseconds().toString()
+        
+        val vehiclePrice = pricing.totalPrice.amount
+        val protectionPrice = protectionPackage?.price?.totalPrice?.amount 
+            ?: protectionPackage?.price?.displayPrice?.amount 
+            ?: 0.0
+            
+        // Calculate addon price
+        val selectedAddonIds = _selectedAddons.value
+        var addonsPrice = 0.0
+        availableAddons.forEach { category ->
+            category.options.forEach { option ->
+                if (selectedAddonIds.contains(option.chargeDetail.id)) {
+                    addonsPrice += option.additionalInfo.price.totalPrice?.amount
+                        ?: option.additionalInfo.price.displayPrice.amount
+                }
+            }
+        }
+            
+        val totalAmount = vehiclePrice + protectionPrice + addonsPrice
+        
+        val savedBooking = dto.SavedBooking(
+            id = idToSave,
+            bookingId = idToSave, // For drafts, bookingId can be same as ID or generated
+            vehicle = dto.Deal(vehicle, pricing, ""), // Reconstruct Deal
+            protectionPackage = protectionPackage,
+            addonIds = selectedAddonIds,
+            timestamp = Clock.System.now().toEpochMilliseconds(),
+            totalPrice = totalAmount,
+            currency = pricing.totalPrice.currency,
+            status = dto.BookingStatus.DRAFT
+        )
+        
+        savedBookingRepository.saveBooking(savedBooking)
+        clearBooking()
     }
 }

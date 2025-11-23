@@ -44,6 +44,7 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.koin.android)
+            // implementation(libs.androidx.navigation.compose)
 
         }
         commonMain.dependencies {
@@ -56,6 +57,8 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.bundles.ktor)
+            implementation(libs.kotlinx.datetime)
+
             implementation(libs.androidx.navigation3.ui)
             implementation(libs.androidx.compose.material3)
             implementation(compose.materialIconsExtended)
@@ -137,3 +140,4 @@ android {
 dependencies {
     debugImplementation(compose.uiTooling)
 }
+

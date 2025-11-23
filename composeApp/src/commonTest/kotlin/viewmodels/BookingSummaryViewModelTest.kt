@@ -28,15 +28,20 @@ class BookingSummaryViewModelTest {
 
     private lateinit var viewModel: BookingSummaryViewModel
     private lateinit var bookingRepository: MockBookingRepository
+    private lateinit var savedBookingRepository: MockSavedBookingRepository
     private lateinit var bookingFlowViewModel: BookingFlowViewModel
     private val testDispatcher = StandardTestDispatcher()
+
+    private lateinit var vehiclesRepository: MockVehiclesRepository
 
     @BeforeTest
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         bookingRepository = MockBookingRepository()
+        savedBookingRepository = MockSavedBookingRepository()
+        vehiclesRepository = MockVehiclesRepository()
         bookingFlowViewModel = BookingFlowViewModel(bookingRepository)
-        viewModel = BookingSummaryViewModel(bookingRepository, bookingFlowViewModel)
+        viewModel = BookingSummaryViewModel(bookingRepository, bookingFlowViewModel, savedBookingRepository, vehiclesRepository)
     }
 
     @AfterTest
@@ -58,8 +63,8 @@ class BookingSummaryViewModelTest {
 
         // Then
         val state = viewModel.uiState.value
-        assertTrue(state is BookingSummaryUiState.Success)
-        assertEquals(mockBooking, (state as BookingSummaryUiState.Success).booking)
+        assertTrue(state is BookingSummaryUiState.Loaded)
+        assertEquals(mockBooking, (state as BookingSummaryUiState.Loaded).booking)
     }
 
     @Test
@@ -80,22 +85,53 @@ class BookingSummaryViewModelTest {
     }
     
     @Test
-    fun `confirmBooking success updates state and calls onConfirmed`() = runTest(testDispatcher) {
+    fun `confirmBooking fails when API fails`() = runTest(testDispatcher) {
         // Given
         val bookingId = "test-booking-id"
         bookingFlowViewModel.setBookingId(bookingId)
+        
+        // Pre-load
         val mockBooking = createMockBooking(bookingId)
-        bookingRepository.mockCompleteBookingResult = Result.Success(mockBooking)
-        var onConfirmedCalled = false
+        bookingRepository.mockGetBookingResult = Result.Success(mockBooking)
+        viewModel.loadBooking()
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Simulate API error
+        bookingRepository.mockCompleteBookingResult = Result.Error(NetworkError.SERVER_ERROR)
 
         // When
-        viewModel.confirmBooking { onConfirmedCalled = true }
+        viewModel.confirmBooking { }
         testDispatcher.scheduler.advanceUntilIdle()
 
         // Then
         val state = viewModel.uiState.value
-        assertTrue(state is BookingSummaryUiState.Success)
-        assertTrue(onConfirmedCalled)
+        assertTrue(state is BookingSummaryUiState.Error)
+        assertEquals("Server error", (state as BookingSummaryUiState.Error).message)
+    }
+
+    @Test
+    fun `confirmBooking success updates state to Confirmed`() = runTest(testDispatcher) {
+        // Given
+        val bookingId = "test-booking-id"
+        bookingFlowViewModel.setBookingId(bookingId)
+        
+        // Pre-load
+        val mockBooking = createMockBooking(bookingId)
+        bookingRepository.mockGetBookingResult = Result.Success(mockBooking)
+        viewModel.loadBooking()
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Simulate API success
+        bookingRepository.mockCompleteBookingResult = Result.Success(mockBooking)
+
+        // When
+        viewModel.confirmBooking { }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Then
+        val state = viewModel.uiState.value
+        assertTrue(state is BookingSummaryUiState.Confirmed)
+        assertEquals(bookingId, (state as BookingSummaryUiState.Confirmed).booking.id)
     }
 
     private fun createMockBooking(id: String): BookingDto {
@@ -145,6 +181,36 @@ class MockBookingRepository : BookingRepository {
     override suspend fun completeBooking(bookingId: String): Result<BookingDto, NetworkError> {
         return mockCompleteBookingResult ?: Result.Error(NetworkError.UNKNOWN)
     }
+    
+    override suspend fun getProtectionPackages(bookingId: String): Result<dto.ProtectionPackagesDto, NetworkError> {
+        TODO("Not yet implemented")
+    }
 }
 
+class MockSavedBookingRepository : repositories.SavedBookingRepository {
+    override suspend fun saveBooking(booking: dto.SavedBooking) {
+        // No-op for test
+    }
 
+    override fun getSavedBookings(): kotlinx.coroutines.flow.Flow<List<dto.SavedBooking>> {
+        return kotlinx.coroutines.flow.flowOf(emptyList())
+    }
+
+    override suspend fun deleteBooking(id: String) {
+        // No-op
+    }
+}
+
+class MockVehiclesRepository : repositories.VehiclesRepository {
+    override suspend fun getAvailableVehicles(bookingId: String): Result<dto.AvailableVehiclesDto, NetworkError> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getAvailableProtectionPackages(bookingId: String): Result<dto.ProtectionPackagesDto, NetworkError> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getAvailableAddons(bookingId: String): Result<dto.AddonsDto, NetworkError> {
+        return Result.Success(dto.AddonsDto(emptyList()))
+    }
+}

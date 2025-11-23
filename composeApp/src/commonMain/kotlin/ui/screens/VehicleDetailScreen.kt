@@ -44,6 +44,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,9 +60,13 @@ import coil3.compose.AsyncImage
 import dto.AddonCategory
 import dto.Deal
 import dto.ProtectionPackageDto
+import kotlinx.coroutines.launch
 import repositories.VehiclesRepository
+import ui.common.formatPrice
 import ui.theme.SixtOrange
 import utils.Result
+
+import ui.common.getCurrencySymbol
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -80,6 +85,8 @@ fun VehicleDetailScreen(
     var selectedProtectionId by remember { mutableStateOf<String?>(null) }
     
     val bookingId = bookingFlowViewModel.bookingId.collectAsState().value
+    val isModifying = bookingFlowViewModel.isModifying.collectAsState().value
+    val selectedAddons = bookingFlowViewModel.selectedAddons.collectAsState().value
 
     LaunchedEffect(bookingId) {
         if (bookingId != null) {
@@ -87,11 +94,18 @@ fun VehicleDetailScreen(
             when (val result = repository.getAvailableProtectionPackages(bookingId)) {
                 is Result.Success -> {
                     protectionPackages = result.data.protectionPackages
-                    // Select middle package by default if available
-                    if (protectionPackages.size >= 2) {
-                        selectedProtectionId = protectionPackages[1].id
-                    } else if (protectionPackages.isNotEmpty()) {
-                        selectedProtectionId = protectionPackages[0].id
+                    
+                    // Check if a protection is already selected in ViewModel (e.g. from Chat or Saved Booking)
+                    val preSelectedId = bookingFlowViewModel.selectedProtectionPackageId.value
+                    if (preSelectedId != null && protectionPackages.any { it.id == preSelectedId }) {
+                        selectedProtectionId = preSelectedId
+                    } else {
+                        // Default fallback: Select middle package
+                        if (protectionPackages.size >= 2) {
+                            selectedProtectionId = protectionPackages[1].id
+                        } else if (protectionPackages.isNotEmpty()) {
+                            selectedProtectionId = protectionPackages[0].id
+                        }
                     }
                 }
                 is Result.Error -> println("Error fetching protections")
@@ -104,6 +118,19 @@ fun VehicleDetailScreen(
             isLoading = false
         }
     }
+
+    // Calculate Dynamic Total Price
+    val basePrice = deal.pricing.totalPrice.amount
+    val protectionPrice = protectionPackages.find { it.id == selectedProtectionId }?.price?.totalPrice?.amount 
+        ?: protectionPackages.find { it.id == selectedProtectionId }?.price?.displayPrice?.amount 
+        ?: 0.0
+    
+    val addonsPrice = addons.flatMap { it.options }
+        .filter { selectedAddons.contains(it.chargeDetail.id) }
+        .sumOf { it.additionalInfo.price.totalPrice?.amount ?: it.additionalInfo.price.displayPrice.amount }
+
+    val grandTotal = basePrice + protectionPrice + addonsPrice
+    val currencySymbol = getCurrencySymbol(deal.pricing.displayPrice.currency)
 
     Scaffold(
         bottomBar = {
@@ -126,25 +153,56 @@ fun VehicleDetailScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "${deal.pricing.displayPrice.currency}${deal.pricing.displayPrice.amount}",
+                            text = "$currencySymbol${formatPrice(grandTotal)}", // Dynamic Total
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
                     }
                     
-                    Button(
-                        onClick = { 
-                            if (selectedProtectionId != null) {
-                                bookingFlowViewModel.setSelectedProtectionPackageId(selectedProtectionId!!)
-                            }
-                            bookingFlowViewModel.selectVehicle(deal.vehicle.id)
-                            onUpgrade(deal) 
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
-                        shape = RoundedCornerShape(12.dp),
-                        contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
-                    ) {
-                        Text("Book Now", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // Save for Later Button
+                        val scope = rememberCoroutineScope()
+                        val savedBookingRepository: repositories.SavedBookingRepository = org.koin.compose.koinInject()
+                        
+                        androidx.compose.material3.OutlinedButton(
+                            onClick = {
+                                scope.launch {
+                                    val selectedProtection = protectionPackages.find { it.id == selectedProtectionId }
+                                    bookingFlowViewModel.saveDraft(
+                                        vehicle = deal.vehicle,
+                                        pricing = deal.pricing,
+                                        protectionPackage = selectedProtection,
+                                        availableAddons = addons,
+                                        savedBookingRepository = savedBookingRepository
+                                    )
+                                    onBack() // Go back after saving
+                                }
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check, // Or a bookmark icon if available
+                                contentDescription = "Save",
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        Button(
+                            onClick = { 
+                                if (selectedProtectionId != null) {
+                                    bookingFlowViewModel.setSelectedProtectionPackageId(selectedProtectionId!!)
+                                }
+                                bookingFlowViewModel.selectVehicle(deal.vehicle.id)
+                                onUpgrade(deal) 
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
+                        ) {
+                            Text(if (isModifying) "Confirm" else "Book Now", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
                     }
                 }
             }
@@ -232,7 +290,7 @@ fun VehicleDetailScreen(
                         )
                     }
                     Text(
-                        text = "${deal.pricing.displayPrice.currency}${deal.pricing.displayPrice.amount}/day",
+                        text = "$currencySymbol${formatPrice(deal.pricing.totalPrice.amount)}", // Total Price
                         style = MaterialTheme.typography.titleMedium,
                         color = SixtOrange,
                         fontWeight = FontWeight.Bold
@@ -289,12 +347,26 @@ fun VehicleDetailScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 if (!isLoading) {
+                    // selectedAddons is now collected at top level
+                    
                     addons.forEach { category ->
                         category.options.take(3).forEach { option ->
+                            val isSelected = selectedAddons.contains(option.chargeDetail.id)
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 8.dp),
+                                    .padding(vertical = 8.dp)
+                                    .clickable { bookingFlowViewModel.toggleAddon(option.chargeDetail.id) }
+                                    .background(
+                                        if (isSelected) SixtOrange.copy(alpha = 0.05f) else Color.Transparent,
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .border(
+                                        width = if (isSelected) 1.dp else 0.dp,
+                                        color = if (isSelected) SixtOrange else Color.Transparent,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .padding(8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Box(
@@ -315,16 +387,16 @@ fun VehicleDetailScreen(
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(option.chargeDetail.title, fontWeight = FontWeight.SemiBold)
                                     Text(
-                                        "${option.additionalInfo.price.displayPrice.currency}${option.additionalInfo.price.displayPrice.amount}", 
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        text = "+ ${getCurrencySymbol(option.additionalInfo.price.displayPrice.currency)}${formatPrice(option.additionalInfo.price.displayPrice.amount)}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold
                                     )
                                 }
                                 Icon(
-                                    Icons.Default.Check, 
-                                    contentDescription = "Add",
-                                    tint = MaterialTheme.colorScheme.primary, // Placeholder for selection state
-                                    modifier = Modifier.alpha(0.3f) // Dimmed for now as we haven't implemented addon selection
+                                    Icons.Default.Check,
+                                    contentDescription = if (isSelected) "Selected" else "Add",
+                                    tint = if (isSelected) SixtOrange else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                                    modifier = Modifier.alpha(if (isSelected) 1f else 0.3f)
                                 )
                             }
                         }
@@ -433,7 +505,7 @@ fun DetailProtectionCard(
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
-                text = "+ ${item.price.displayPrice.currency}${item.price.displayPrice.amount}",
+                text = "+ ${getCurrencySymbol(item.price.displayPrice.currency)}${formatPrice(item.price.displayPrice.amount)}", // Formatted Symbol
                 style = MaterialTheme.typography.titleSmall,
                 color = if (isSelected) SixtOrange else MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold

@@ -54,10 +54,16 @@ fun VehicleQuickInfo(deal: Deal, onSelect: () -> Unit) {
                 )
             }
             Text(
-                text = "${deal.pricing.displayPrice.currency} ${deal.pricing.displayPrice.amount} /day",
+                text = "${ui.common.getCurrencySymbol(deal.pricing.totalPrice.currency)}${ui.common.formatPrice(deal.pricing.totalPrice.amount)}",
                 style = MaterialTheme.typography.titleLarge,
                 color = SixtOrange,
                 fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "Total",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+//                modifier = Modifier.align(Alignment.End)
             )
         }
 

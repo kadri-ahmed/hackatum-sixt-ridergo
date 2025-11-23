@@ -1,232 +1,354 @@
 package ui.screens
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import org.jetbrains.compose.ui.tooling.preview.Preview
-import ui.common.SectionHeader
 import ui.common.SixtCard
-import ui.common.SixtPrimaryButton
-import ui.theme.AppTheme
-import ui.theme.SixtOrange
 
-@OptIn(ExperimentalFoundationApi::class)
+import ui.theme.SixtOrange
+import repositories.UserRepository
+
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun ProfileScreen(
-    id: Int,
-    showDetails: Boolean,
-    popBackStack: () -> Unit,
-    popUpToLogin: () -> Unit,
-    isDarkTheme: Boolean,
-    onToggleTheme: () -> Unit
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {},
+    isDemoMode: Boolean = false,
+    onToggleDemoMode: () -> Unit = {},
+    apiKey: String = "",
+    onApiKeyChange: (String) -> Unit = {},
+    userRepository: UserRepository = org.koin.compose.koinInject()
 ) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
-    ) {
-        // User Header
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = null,
-                    modifier = Modifier.size(40.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Text(
-                    text = "John Doe",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Text(
-                    text = "Gold Member",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = SixtOrange
-                )
-            }
-        }
+    var showApiKeyDialog by remember { mutableStateOf(false) }
+    var tempApiKey by remember { mutableStateOf(apiKey) }
+    val userProfile = remember { userRepository.getProfile() }
 
-        // Settings
-        SixtCard {
-            SectionHeader("Settings")
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Dark Mode", style = MaterialTheme.typography.bodyLarge)
-                Switch(
-                    checked = isDarkTheme,
-                    onCheckedChange = { onToggleTheme() },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = SixtOrange,
-                        checkedTrackColor = SixtOrange.copy(alpha = 0.2f)
-                    )
+    if (showApiKeyDialog) {
+        AlertDialog(
+            onDismissRequest = { showApiKeyDialog = false },
+            title = { Text("Enter Groq API Key") },
+            text = {
+                OutlinedTextField(
+                    value = tempApiKey,
+                    onValueChange = { tempApiKey = it },
+                    label = { Text("API Key") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Account Details
-            Row(
-                modifier = Modifier.fillMaxWidth().clickable { /* TODO: Navigate to Account Details */ },
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Account Details", style = MaterialTheme.typography.bodyLarge)
-                Icon(
-                    imageVector = Icons.Default.Person, // Placeholder icon
-                    contentDescription = "Account Details",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Support
-            Row(
-                modifier = Modifier.fillMaxWidth().clickable { /* TODO: Navigate to Support */ },
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Support", style = MaterialTheme.typography.bodyLarge)
-                 Icon(
-                    imageVector = Icons.Default.Email, // Placeholder icon
-                    contentDescription = "Support",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            
-             Spacer(modifier = Modifier.height(16.dp))
-
-            // Version
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Version", style = MaterialTheme.typography.bodyLarge)
-                Text("1.0.0", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Live Demo Settings
-            val storage: utils.Storage = org.koin.compose.koinInject()
-            var isLiveDemo by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(storage.getPreference("live_demo_enabled") == "true") }
-            var apiKey by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(storage.getPreference("groq_api_key") ?: "") }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text("Live Demo", style = MaterialTheme.typography.bodyLarge)
-                    Text("Enable custom API Key", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(
-                    checked = isLiveDemo,
-                    onCheckedChange = { 
-                        isLiveDemo = it 
-                        storage.savePreference("live_demo_enabled", it.toString())
-                    },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = SixtOrange,
-                        checkedTrackColor = SixtOrange.copy(alpha = 0.2f)
-                    )
-                )
-            }
-
-            if (isLiveDemo) {
-                Spacer(modifier = Modifier.height(8.dp))
-                ui.common.SixtInput(
-                    value = apiKey,
-                    onValueChange = { 
-                        apiKey = it
-                    },
-                    label = "Groq API Key"
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                ui.common.SixtPrimaryButton(
-                    text = "Save API Key",
+            },
+            confirmButton = {
+                Button(
                     onClick = {
-                        storage.savePreference("groq_api_key", apiKey)
+                        onApiKeyChange(tempApiKey)
+                        showApiKeyDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = SixtOrange)
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showApiKeyDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { 
+                    Text(
+                        "Profile", 
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
+                    ) 
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                )
+            )
+        }
+    ) { paddingValues ->
+        Surface(
+            modifier = Modifier.fillMaxSize().padding(paddingValues),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp)
+                    .verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                // User Header
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 16.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(88.dp)
+                            .clip(CircleShape)
+                            .background(SixtOrange.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = SixtOrange
+                        )
                     }
+                    Spacer(modifier = Modifier.width(24.dp))
+                    Column {
+                        Text(
+                            text = userProfile?.name ?: "Guest User",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Gold Member",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = SixtOrange,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+
+                // Stats
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    StatCard(modifier = Modifier.weight(1f), label = "Trips", value = "12")
+                    StatCard(modifier = Modifier.weight(1f), label = "Points", value = "2,450")
+                }
+
+                // Settings List
+                Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                    
+                    // Account Section
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Account",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                        SixtCard(modifier = Modifier.fillMaxWidth()) {
+                            Column {
+                                SettingItem(icon = Icons.Default.Notifications, title = "Notifications")
+                                Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                SettingItem(icon = Icons.Default.CreditCard, title = "Payment Methods")
+                            }
+                        }
+                    }
+
+                    // Appearance Section
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Appearance",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                        SixtCard(modifier = Modifier.fillMaxWidth()) {
+                            SettingSwitchItem(
+                                icon = Icons.Default.Settings,
+                                title = "Dark Mode",
+                                checked = isDarkTheme,
+                                onCheckedChange = { onToggleTheme() }
+                            )
+                        }
+                    }
+                    
+                    // Developer Section
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Developer",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                        SixtCard(modifier = Modifier.fillMaxWidth()) {
+                            Column {
+                                SettingSwitchItem(
+                                    icon = Icons.Default.Settings,
+                                    title = "Live Demo Mode",
+                                    checked = isDemoMode,
+                                    onCheckedChange = { 
+                                        onToggleDemoMode()
+                                        if (!isDemoMode && apiKey.isBlank()) {
+                                            tempApiKey = apiKey
+                                            showApiKeyDialog = true
+                                        }
+                                    }
+                                )
+                                
+                                if (isDemoMode) {
+                                    Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                    SettingItem(
+                                        icon = Icons.Default.Settings,
+                                        title = "Groq API Key",
+                                        onClick = {
+                                            tempApiKey = apiKey
+                                            showApiKeyDialog = true
+                                        },
+                                        subtitle = if (apiKey.isNotBlank()) "••••••••" else "Not set"
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(32.dp))
+                
+                Button(
+                    onClick = { /* Logout */ },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("Log Out", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                }
+                
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+    }
+}
+
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+fun StatCard(modifier: Modifier = Modifier, label: String, value: String) {
+    SixtCard(modifier = modifier) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = SixtOrange
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
+
+@Composable
+fun SettingItem(icon: ImageVector, title: String, onClick: () -> Unit = {}, subtitle: String? = null) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.width(20.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        SixtPrimaryButton(
-            text = "Log Out",
-            onClick = popUpToLogin
+        Icon(
+            Icons.AutoMirrored.Filled.ArrowForward,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            modifier = Modifier.size(20.dp)
         )
     }
 }
 
-// @Preview(showBackground = true)
-// @Composable
-// private fun ProfilePreview() {
-//     AppTheme {
-//         Surface(
-//             modifier = Modifier.fillMaxSize(),
-//             color = MaterialTheme.colorScheme.background
-//         ) {
-//             ProfileScreen(
-//                 id = 7,
-//                 showDetails = true,
-//                 popBackStack = {},
-//                 popUpToLogin = {}
-//             )
-//         }
-//     }
-// }
+@Composable
+fun SettingSwitchItem(
+    icon: ImageVector,
+    title: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.width(20.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.weight(1f)
+        )
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = SixtOrange,
+                checkedTrackColor = SixtOrange.copy(alpha = 0.2f),
+                uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+            )
+        )
+    }
+}

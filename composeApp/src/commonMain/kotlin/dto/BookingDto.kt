@@ -7,6 +7,7 @@ data class BookingDto (
     val bookedCategory: String,
     val selectedVehicle: Deal? = null,
     val protectionPackages: ProtectionPackageDto? = null,
+    val addons: List<AddonOption>? = null,
     val status: String,
     val createdAt: String,
     val id: String,
