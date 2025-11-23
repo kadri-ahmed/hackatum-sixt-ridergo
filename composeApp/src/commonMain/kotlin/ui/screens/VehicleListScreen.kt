@@ -55,6 +55,7 @@ import dto.VehicleAttribute
 import dto.VehicleCost
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
+import recommendations.ScoredDeal
 import ui.common.SixtCard
 import ui.common.SixtPrimaryButton
 import ui.components.VehicleCard
@@ -135,32 +136,20 @@ fun VehicleListScreen(
                     ) {
                         // AI Recommendation Header
                         item {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(
-                                        MaterialTheme.colorScheme.secondaryContainer,
-                                        RoundedCornerShape(8.dp)
-                                    )
-                                    .padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    Icons.Filled.Star,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    "We found 3 perfect matches for your mountain trip!",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
-                            }
+                            RecommendationHeader(
+                                message = state.recommendationMessage,
+                                topRecommendations = state.scoredDeals.take(3)
+                            )
                         }
 
                         items(state.deals) { deal ->
-                            VehicleCard(deal = deal, onSelect = { onVehicleSelected(deal) })
+                            // Find the scored deal to get recommendation reasons
+                            val scoredDeal = state.scoredDeals.firstOrNull { it.deal.vehicle.id == deal.vehicle.id }
+                            VehicleCard(
+                                deal = deal,
+                                scoredDeal = scoredDeal,
+                                onSelect = { onVehicleSelected(deal) }
+                            )
                         }
                     }
                 }
@@ -169,4 +158,49 @@ fun VehicleListScreen(
     }
 }
 
+/**
+ * Header component showing personalized recommendation message
+ */
+@Composable
+fun RecommendationHeader(
+    message: String,
+    topRecommendations: List<ScoredDeal>
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                MaterialTheme.colorScheme.secondaryContainer,
+                RoundedCornerShape(8.dp)
+            )
+            .padding(12.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Filled.Star,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                message,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
+        
+        // Show top recommendation highlights
+        if (topRecommendations.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                "Top picks: ${topRecommendations.joinToString(", ") { "${it.deal.vehicle.brand} ${it.deal.vehicle.model}" }}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+            )
+        }
+    }
+}
 

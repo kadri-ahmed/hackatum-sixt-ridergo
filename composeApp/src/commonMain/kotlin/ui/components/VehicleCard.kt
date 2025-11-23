@@ -30,13 +30,19 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import dto.Deal
 import org.jetbrains.compose.resources.ExperimentalResourceApi
+import recommendations.ScoredDeal
 import ui.common.SixtCard
 import ui.common.SixtPrimaryButton
 import ui.theme.SixtOrange
 
 @OptIn(ExperimentalResourceApi::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-fun VehicleCard(deal: Deal, onSelect: () -> Unit, onLongClick: (() -> Unit)? = null) {
+fun VehicleCard(
+    deal: Deal,
+    scoredDeal: ScoredDeal? = null,
+    onSelect: () -> Unit,
+    onLongClick: (() -> Unit)? = null
+) {
     SixtCard(onClick = onSelect, onLongClick = onLongClick) {
         Column {
             // Header with Brand/Model and Price
@@ -106,8 +112,47 @@ fun VehicleCard(deal: Deal, onSelect: () -> Unit, onLongClick: (() -> Unit)? = n
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Recommendations / Upsell Reasons
-            if (deal.vehicle.upsellReasons.isNotEmpty()) {
+            // Recommendation Reasons (from scoring engine)
+            if (scoredDeal != null && scoredDeal.reasons.isNotEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(SixtOrange.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                        .padding(8.dp)
+                ) {
+                    // Show top 3 reasons
+                    scoredDeal.reasons.take(3).forEach { reason ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Star,
+                                contentDescription = null,
+                                tint = SixtOrange,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = reason.title,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                if (reason.description.isNotBlank()) {
+                                    Text(
+                                        text = reason.description,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+            // Fallback to upsell reasons if no scored reasons
+            else if (deal.vehicle.upsellReasons.isNotEmpty()) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
