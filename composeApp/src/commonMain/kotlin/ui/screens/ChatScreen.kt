@@ -52,7 +52,8 @@ data class ChatMessage(
 @OptIn(KoinExperimentalAPI::class)
 @Composable
 fun ChatScreen(
-    viewModel: ChatViewModel = koinViewModel()
+    viewModel: ChatViewModel = koinViewModel(),
+    onVehicleSelect: (Deal) -> Unit
 ) {
     var messageText by remember { mutableStateOf("") }
     val messages by viewModel.messages.collectAsState()
@@ -70,7 +71,8 @@ fun ChatScreen(
                     message = message,
                     onLongClickVehicle = { deal ->
                         selectedVehicle = deal
-                    }
+                    },
+                    onVehicleClick = onVehicleSelect
                 )
             }
             
@@ -137,7 +139,7 @@ fun ChatScreen(
             ui.components.VehicleQuickInfo(
                 deal = selectedVehicle!!,
                 onSelect = {
-                    // TODO: Handle selection (e.g. navigate to details or booking)
+                    onVehicleSelect(selectedVehicle!!)
                     selectedVehicle = null
                 }
             )
@@ -147,7 +149,11 @@ fun ChatScreen(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ChatBubble(message: ChatMessage, onLongClickVehicle: ((Deal) -> Unit)? = null) {
+fun ChatBubble(
+    message: ChatMessage, 
+    onLongClickVehicle: ((Deal) -> Unit)? = null,
+    onVehicleClick: ((Deal) -> Unit)? = null
+) {
     val backgroundColor = if (message.isUser) SixtOrange else MaterialTheme.colorScheme.surfaceVariant
     val contentColor = if (message.isUser) Color.White else MaterialTheme.colorScheme.onSurface
     val alignment = if (message.isUser) Alignment.End else Alignment.Start
@@ -171,7 +177,7 @@ fun ChatBubble(message: ChatMessage, onLongClickVehicle: ((Deal) -> Unit)? = nul
                     Spacer(modifier = Modifier.height(8.dp))
                     // Compact Vehicle Card
                     SixtCard(
-                        onClick = { /* Navigate? */ },
+                        onClick = { onVehicleClick?.invoke(message.deal) },
                         onLongClick = { onLongClickVehicle?.invoke(message.deal) }
                     ) {
                         Column {

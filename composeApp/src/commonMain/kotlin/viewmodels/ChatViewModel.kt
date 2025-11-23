@@ -33,9 +33,11 @@ class ChatViewModel(
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
-    
+
     // Track user context across conversation
     private var userContext = UserContext()
+
+    private var availableVehicles: List<dto.Deal> = emptyList()
 
     fun sendMessage(text: String) {
         if (text.isBlank() || _isLoading.value) return
@@ -61,7 +63,7 @@ class ChatViewModel(
                 } else {
                     emptyList()
                 }
-                
+
                 // Generate recommendations using the engine
                 val destinationContext = userContext.toDestinationContext()
                 val recommendationEngine = VehicleRecommendationEngine(destinationContext)
@@ -70,10 +72,10 @@ class ChatViewModel(
                 } else {
                     emptyList()
                 }
-                
+
                 // Build enhanced system prompt
                 val systemPrompt = buildSystemPrompt(userContext, scoredDeals)
-                
+
                 val systemMessage = GroqMessage(
                     role = "system",
                     content = systemPrompt
@@ -103,7 +105,7 @@ class ChatViewModel(
                             } else {
                                 topRecommendations.map { it.deal }
                             }
-                            
+
                             // Enhance response with vehicle details if not already present
                             if (mentionedVehicles.isEmpty() && vehiclesToInclude.isNotEmpty()) {
                                 val vehicleDetails = formatVehicleRecommendations(vehiclesToInclude, scoredDeals)
@@ -113,7 +115,7 @@ class ChatViewModel(
                         
                         // Try to find matching vehicles in the response
                         val matchingDeal = findMatchingVehicle(assistantResponse, availableDeals)
-                        
+
                         _messages.value = _messages.value + ChatMessage(
                             text = assistantResponse, 
                             isUser = false,
@@ -152,7 +154,7 @@ class ChatViewModel(
     fun clearError() {
         _errorMessage.value = null
     }
-    
+
     /**
      * Build enhanced system prompt with user context and recommendations
      */
@@ -163,7 +165,7 @@ class ChatViewModel(
         val basePrompt = StringBuilder()
         basePrompt.append("You are a helpful and friendly assistant for RiderGo, a premium car rental service. ")
         basePrompt.append("Your goal is to help users find the perfect vehicle for their needs.\n\n")
-        
+
         // Add user context information
         val contextInfo = mutableListOf<String>()
         if (context.travelerCount != null) {
@@ -187,7 +189,7 @@ class ChatViewModel(
         if (context.preferences.isNotEmpty()) {
             contextInfo.add("Preferences: ${context.preferences.joinToString(", ")}")
         }
-        
+
         if (contextInfo.isNotEmpty()) {
             basePrompt.append("Current user information:\n")
             contextInfo.forEach { info ->
@@ -195,7 +197,7 @@ class ChatViewModel(
             }
             basePrompt.append("\n")
         }
-        
+
         // Check if we need more information
         val missingInfo = context.getMissingInfo()
         if (missingInfo.isNotEmpty() && !context.hasMinimumInfo()) {
@@ -206,7 +208,7 @@ class ChatViewModel(
             }
             basePrompt.append("\nBe conversational and ask one or two questions at a time, not all at once.\n\n")
         }
-        
+
         // Add top recommendations if available
         val topRecommendations = scoredDeals.take(3)
         if (topRecommendations.isNotEmpty() && context.hasMinimumInfo()) {
@@ -225,7 +227,7 @@ class ChatViewModel(
             basePrompt.append("\nWhen recommending vehicles, always mention the full name (Brand + Model) clearly. ")
             basePrompt.append("Explain why each vehicle is a good fit based on the user's needs.\n\n")
         }
-        
+
         basePrompt.append("Guidelines:\n")
         basePrompt.append("- Be friendly, helpful, and conversational\n")
         basePrompt.append("- Ask clarifying questions when information is missing\n")
@@ -233,10 +235,10 @@ class ChatViewModel(
         basePrompt.append("- Always mention the full vehicle name (Brand + Model) when recommending\n")
         basePrompt.append("- If the user asks about specific vehicles, provide detailed information\n")
         basePrompt.append("- Keep responses concise but informative\n")
-        
+
         return basePrompt.toString()
     }
-    
+
     /**
      * Format vehicle recommendations for the LLM response
      */
@@ -245,14 +247,14 @@ class ChatViewModel(
         scoredDeals: List<recommendations.ScoredDeal>
     ): String {
         if (deals.isEmpty()) return ""
-        
+
         val formatted = StringBuilder()
         formatted.append("Here are my top recommendations:\n\n")
-        
+
         deals.take(3).forEachIndexed { index, deal ->
             val scoredDeal = scoredDeals.firstOrNull { it.deal.vehicle.id == deal.vehicle.id }
             val topReasons = scoredDeal?.reasons?.take(2) ?: emptyList()
-            
+
             formatted.append("${index + 1}. **${deal.vehicle.brand} ${deal.vehicle.model}**\n")
             formatted.append("   Price: €${deal.pricing.displayPrice.amount}/day\n")
             if (topReasons.isNotEmpty()) {
@@ -260,10 +262,10 @@ class ChatViewModel(
             }
             formatted.append("\n")
         }
-        
+
         return formatted.toString()
     }
-    
+
     /**
      * Find vehicles mentioned in the LLM response
      */
@@ -287,11 +289,11 @@ class ChatViewModel(
         availableDeals: List<dto.Deal>
     ): dto.Deal? {
         if (availableDeals.isEmpty()) return null
-        
+
         // Check if any vehicle brand+model is mentioned in the text
         return availableDeals.firstOrNull { deal ->
             val fullName = "${deal.vehicle.brand} ${deal.vehicle.model}"
-            text.contains(fullName, ignoreCase = true) || 
+            text.contains(fullName, ignoreCase = true) ||
             text.contains(deal.vehicle.model, ignoreCase = true)
         }
     }
