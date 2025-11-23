@@ -22,6 +22,13 @@ class BookingFlowViewModel(
     private val _selectedProtectionPackageId = MutableStateFlow<String?>(null)
     val selectedProtectionPackageId: StateFlow<String?> = _selectedProtectionPackageId.asStateFlow()
 
+    private val _homeVisitCount = MutableStateFlow(0)
+    val homeVisitCount: StateFlow<Int> = _homeVisitCount.asStateFlow()
+
+    fun incrementHomeVisitCount() {
+        _homeVisitCount.value += 1
+    }
+
     fun setBookingId(id: String) {
         _bookingId.value = id
     }

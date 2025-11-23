@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -74,7 +75,10 @@ fun HomeScreen(
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
 
+    val homeVisitCount by bookingFlowViewModel.homeVisitCount.collectAsState()
+
     LaunchedEffect(Unit) {
+        bookingFlowViewModel.incrementHomeVisitCount()
         var bookingId = bookingFlowViewModel.bookingId.value
         if (bookingId == null) {
             when (val result = bookingRepository.createBooking()) {
@@ -128,7 +132,20 @@ fun HomeScreen(
     }
 
     var selectedVehicleForInfo by remember { mutableStateOf<Deal?>(null) }
-    var showChatCard by remember { mutableStateOf(true) }
+    
+    // Chat card logic: Show on 1st visit, then every 3rd visit (1, 4, 7...)
+    // Note: homeVisitCount starts at 0, increments to 1 on first composition
+    val shouldShowChatCard = (homeVisitCount % 3 == 1)
+    var isChatCardDismissed by remember { mutableStateOf(false) }
+    
+    // Reset dismissal when the frequency condition changes (e.g. new visit)
+    LaunchedEffect(shouldShowChatCard) {
+        if (shouldShowChatCard) {
+            isChatCardDismissed = false
+        }
+    }
+
+    val showChatCard = shouldShowChatCard && !isChatCardDismissed
 
     Column(
         modifier = Modifier
@@ -234,11 +251,11 @@ fun HomeScreen(
                                     androidx.compose.runtime.key("chat_card") {
                                         SwipeableChatCard(
                                             onSwipeLeft = {
-                                                showChatCard = false
+                                                isChatCardDismissed = true
                                             },
                                             onSwipeRight = {
                                                 navigateToChat()
-                                                showChatCard = false
+                                                isChatCardDismissed = true
                                             }
                                         )
                                     }
