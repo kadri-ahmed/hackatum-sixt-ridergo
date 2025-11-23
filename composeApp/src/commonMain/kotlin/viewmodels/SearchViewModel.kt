@@ -44,19 +44,21 @@ class SearchViewModel(
         }
     }
     
-    fun ensureBookingCreated() {
-        // Only create booking if it doesn't exist
-        if (bookingFlowViewModel.bookingId.value == null) {
-            viewModelScope.launch {
-                when (val result = bookingRepository.createBooking()) {
-                    is Result.Success -> {
-                        bookingFlowViewModel.setBookingId(result.data.id)
-                        println("🎫 Booking created: ${result.data.id}")
-                    }
-                    is Result.Error -> {
-                        println("❌ Failed to create booking: ${result.error}")
-                    }
-                }
+    suspend fun ensureBookingCreated(): String? {
+        // Return existing booking ID if available
+        bookingFlowViewModel.bookingId.value?.let { return it }
+        
+        // Create a new booking if it doesn't exist
+        return when (val result = bookingRepository.createBooking()) {
+            is Result.Success -> {
+                val bookingId = result.data.id
+                bookingFlowViewModel.setBookingId(bookingId)
+                println("🎫 Booking created: $bookingId")
+                bookingId
+            }
+            is Result.Error -> {
+                println("❌ Failed to create booking: ${result.error}")
+                null
             }
         }
     }
@@ -64,7 +66,14 @@ class SearchViewModel(
     fun searchVehicles(query: String) {
         viewModelScope.launch {
             _uiState.value = SearchUiState.Loading
-            when (val result = vehiclesRepository.searchVehicles(query)) {
+            
+            // Ensure we have a booking ID for the search
+            val bookingId = ensureBookingCreated() ?: run {
+                _uiState.value = SearchUiState.Error("Failed to initialize booking. Please try again.")
+                return@launch
+            }
+            
+            when (val result = vehiclesRepository.searchVehicles(query, bookingId)) {
                 is Result.Success -> {
                     _uiState.value = SearchUiState.SearchResults(result.data.deals)
                 }

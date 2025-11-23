@@ -38,6 +38,34 @@ class BookingFlowViewModel(
         _bookingId.value = id
     }
     
+    /**
+     * Checks if a booking ID is fake (not a real API booking ID).
+     * Returns true if the ID appears to be fake, false if it's likely a real ID.
+     */
+    fun isFakeBookingId(bookingId: String?): Boolean {
+        if (bookingId == null) return true
+        // Fake IDs: start with "chat_booking_" or are just numeric timestamps
+        return bookingId.startsWith("chat_booking_") || bookingId.matches(Regex("^\\d+$"))
+    }
+    
+    /**
+     * Ensures we have a real booking ID. If the provided ID is fake, creates a new real booking via API.
+     * This should only be used when we can migrate the booking state (e.g., when resuming).
+     * For operations like completion, use isFakeBookingId to check and show an error instead.
+     */
+    suspend fun ensureRealBookingId(bookingId: String?): String? {
+        if (bookingId == null || isFakeBookingId(bookingId)) {
+            // Create a new booking if no ID provided or if it's fake
+            return when (val result = bookingRepository.createBooking()) {
+                is utils.Result.Success -> result.data.id
+                is utils.Result.Error -> null
+            }
+        }
+        
+        // Already a real ID
+        return bookingId
+    }
+    
     fun setSelectedProtectionPackageId(id: String) {
         _selectedProtectionPackageId.value = id
         // Assign to booking
@@ -90,9 +118,35 @@ class BookingFlowViewModel(
         protectionPackage: dto.ProtectionPackageDto?,
         availableAddons: List<dto.AddonCategory>,
         savedBookingRepository: repositories.SavedBookingRepository
-    ) {
+    ): utils.Result<Unit, utils.NetworkError> {
         val currentBookingId = _bookingId.value
-        val idToSave = if (currentBookingId != null && _isModifying.value) currentBookingId else Clock.System.now().toEpochMilliseconds().toString()
+        
+        // Always ensure we have a real booking ID
+        val realBookingId = if (currentBookingId != null && _isModifying.value) {
+            // Use existing booking ID if modifying
+            currentBookingId
+        } else {
+            // Create a new real booking
+            when (val createResult = bookingRepository.createBooking()) {
+                is utils.Result.Success -> {
+                    val newBookingId = createResult.data.id
+                    // Assign vehicle to the new booking
+                    val vehicleResult = bookingRepository.assignVehicleToBooking(newBookingId, vehicle.id)
+                    if (vehicleResult is utils.Result.Success) {
+                        // Assign protection package if present
+                        if (protectionPackage != null) {
+                            bookingRepository.assignProtectionPackageToBooking(newBookingId, protectionPackage.id)
+                        }
+                        newBookingId
+                    } else {
+                        return utils.Result.Error(utils.NetworkError.UNKNOWN)
+                    }
+                }
+                is utils.Result.Error -> {
+                    return createResult
+                }
+            }
+        }
         
         val vehiclePrice = pricing.totalPrice.amount
         val protectionPrice = protectionPackage?.price?.totalPrice?.amount 
@@ -114,8 +168,8 @@ class BookingFlowViewModel(
         val totalAmount = vehiclePrice + protectionPrice + addonsPrice
         
         val savedBooking = dto.SavedBooking(
-            id = idToSave,
-            bookingId = idToSave, // For drafts, bookingId can be same as ID or generated
+            id = Clock.System.now().toEpochMilliseconds().toString(),
+            bookingId = realBookingId, // Always use real booking ID
             vehicle = dto.Deal(vehicle, pricing, ""), // Reconstruct Deal
             protectionPackage = protectionPackage,
             addonIds = selectedAddonIds,
@@ -127,5 +181,6 @@ class BookingFlowViewModel(
         
         savedBookingRepository.saveBooking(savedBooking)
         clearBooking()
+        return utils.Result.Success(Unit)
     }
 }

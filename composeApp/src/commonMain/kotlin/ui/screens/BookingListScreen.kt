@@ -32,7 +32,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -41,6 +44,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import dto.SavedBooking
+import kotlinx.coroutines.DelicateCoroutinesApi
+import org.koin.compose.koinInject
 import repositories.SavedBookingRepository
 import ui.common.formatPrice
 import ui.common.getCurrencySymbol
@@ -54,9 +59,11 @@ fun BookingListScreen(
     onBookingSelected: (dto.Deal) -> Unit,
     onBookingDetail: (String) -> Unit,
     savedBookingRepository: SavedBookingRepository = org.koin.compose.koinInject(),
-    bookingFlowViewModel: BookingFlowViewModel = org.koin.compose.koinInject()
+    bookingFlowViewModel: BookingFlowViewModel = org.koin.compose.koinInject(),
+    bookingRepository: repositories.BookingRepository = org.koin.compose.koinInject()
 ) {
     val savedBookings by savedBookingRepository.getSavedBookings().collectAsState(initial = emptyList())
+    val coroutineScope = rememberCoroutineScope()
     
     val confirmedBookings = savedBookings.filter { it.status == dto.BookingStatus.CONFIRMED }
     val draftBookings = savedBookings.filter { it.status == dto.BookingStatus.DRAFT }
@@ -103,19 +110,40 @@ fun BookingListScreen(
                         SavedBookingCard(
                             booking = booking,
                             onClick = {
-                                // Resume booking
-                                bookingFlowViewModel.setBookingId(booking.bookingId)
-                                bookingFlowViewModel.selectVehicle(booking.vehicle.vehicle.id)
-                                if (booking.protectionPackage != null) {
-                                    bookingFlowViewModel.setSelectedProtectionPackageId(booking.protectionPackage.id)
+                                // Resume booking - ensure we have a real booking ID
+                                coroutineScope.launch {
+                                    val realBookingId = bookingFlowViewModel.ensureRealBookingId(booking.bookingId)
+                                    if (realBookingId != null) {
+                                        // If we created a new booking (fake ID was replaced), assign vehicle and protection
+                                        if (booking.bookingId != realBookingId) {
+                                            // Assign vehicle to the new booking
+                                            bookingRepository.assignVehicleToBooking(realBookingId, booking.vehicle.vehicle.id)
+                                            // Assign protection package if present
+                                            if (booking.protectionPackage != null) {
+                                                bookingRepository.assignProtectionPackageToBooking(realBookingId, booking.protectionPackage.id)
+                                            }
+                                            // Update the saved booking with the real ID
+                                            val updatedBooking = booking.copy(bookingId = realBookingId)
+                                            savedBookingRepository.saveBooking(updatedBooking)
+                                        }
+                                        
+                                        bookingFlowViewModel.setBookingId(realBookingId)
+                                        bookingFlowViewModel.selectVehicle(booking.vehicle.vehicle.id)
+                                        if (booking.protectionPackage != null) {
+                                            bookingFlowViewModel.setSelectedProtectionPackageId(booking.protectionPackage.id)
+                                        }
+                                        booking.addonIds.forEach { bookingFlowViewModel.toggleAddon(it) }
+                                        bookingFlowViewModel.setModifying(true)
+                                        // Ensure callback is called on main thread
+                                        withContext(Dispatchers.Main) {
+                                            onBookingSelected(booking.vehicle)
+                                        }
+                                    }
                                 }
-                                booking.addonIds.forEach { bookingFlowViewModel.toggleAddon(it) }
-                                bookingFlowViewModel.setModifying(true)
-                                onBookingSelected(booking.vehicle)
                             },
                             onDelete = {
                                 // Delete booking
-                                kotlinx.coroutines.GlobalScope.launch {
+                                coroutineScope.launch {
                                     savedBookingRepository.deleteBooking(booking.id)
                                 }
                             }

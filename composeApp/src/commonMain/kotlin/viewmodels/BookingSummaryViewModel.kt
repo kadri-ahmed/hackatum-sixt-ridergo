@@ -33,6 +33,13 @@ class BookingSummaryViewModel(
                 _uiState.value = BookingSummaryUiState.Error("No booking found")
                 return@launch
             }
+            
+            // Check if booking ID is fake - if so, show error (can't load a fake booking)
+            if (bookingFlowViewModel.isFakeBookingId(bookingId)) {
+                _uiState.value = BookingSummaryUiState.Error("Invalid booking. Please resume from your saved bookings.")
+                return@launch
+            }
+            
             _uiState.value = BookingSummaryUiState.Loading
             
             when (val result = bookingRepository.getBooking(bookingId)) {
@@ -66,6 +73,12 @@ class BookingSummaryViewModel(
         viewModelScope.launch {
             val bookingId = bookingFlowViewModel.bookingId.value ?: run {
                 _uiState.value = BookingSummaryUiState.Error("No booking found")
+                return@launch
+            }
+            
+            // Check if booking ID is fake - if so, show error (can't complete a fake booking)
+            if (bookingFlowViewModel.isFakeBookingId(bookingId)) {
+                _uiState.value = BookingSummaryUiState.Error("Invalid booking. Please resume from your saved bookings to complete.")
                 return@launch
             }
             

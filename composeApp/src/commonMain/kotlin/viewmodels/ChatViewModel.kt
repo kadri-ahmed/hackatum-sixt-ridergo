@@ -42,6 +42,7 @@ class ChatViewModel(
     private var protectionPackages: List<dto.ProtectionPackageDto> = emptyList()
     private var availableAddons: List<dto.AddonCategory> = emptyList()
     private var savedBookings: List<SavedBooking> = emptyList()
+    private var chatSessionBookingId: String? = null
 
     init {
         viewModelScope.launch {
@@ -50,9 +51,32 @@ class ChatViewModel(
             }
         }
     }
+    
+    /**
+     * Ensures we have a real booking ID for the chat session.
+     * Creates one if it doesn't exist yet.
+     */
+    private suspend fun ensureChatSessionBookingId(): String? {
+        if (chatSessionBookingId == null) {
+            when (val result = bookingRepository.createBooking()) {
+                is utils.Result.Success -> {
+                    chatSessionBookingId = result.data.id
+                }
+                is utils.Result.Error -> {
+                    return null
+                }
+            }
+        }
+        return chatSessionBookingId
+    }
 
     fun startNewChat() {
         chatRepository.clearMessages()
+        // Reset the chat session booking ID when starting a new chat
+        chatSessionBookingId = null
+        availableVehicles = emptyList()
+        protectionPackages = emptyList()
+        availableAddons = emptyList()
     }
 
     fun deleteBooking(bookingId: String) {
@@ -73,18 +97,6 @@ class ChatViewModel(
                     msg
                 }
             }
-            
-            // We need to update the repository with the modified messages
-            // Since we don't have updateAll, we might need to clear and re-add or just update in memory if the repo is backed by memory.
-            // ChatRepository is likely backed by a MutableStateFlow or similar.
-            // Let's assume we can just re-emit the messages if we had access to the flow, but we only have `messages` as StateFlow.
-            // We need a way to update the messages in the repository.
-            // Looking at ChatRepository (I should have checked it), it usually has `updateMessage` or we can just rely on the fact that
-            // `messages` might be mutable in the repo.
-            // But wait, `messages` is a StateFlow from repo.
-            // Let's check if we can update the message individually.
-            // `chatRepository.updateMessage(updatedMessage)` exists (used in saveBooking).
-            
             updatedMessages.forEach { msg ->
                 if (msg.deletedBookingIds.contains(bookingId)) {
                     chatRepository.updateMessage(msg)
@@ -108,21 +120,28 @@ class ChatViewModel(
 
         viewModelScope.launch {
             try {
+                // Ensure we have a real booking ID for the chat session
+                val bookingId = ensureChatSessionBookingId() ?: run {
+                    _errorMessage.value = "Failed to initialize booking session. Please try again."
+                    _isLoading.value = false
+                    return@launch
+                }
+                
                 // Fetch data if needed
                 if (availableVehicles.isEmpty()) {
-                    val result = vehiclesRepository.getAvailableVehicles("mock_booking_id")
+                    val result = vehiclesRepository.getAvailableVehicles(bookingId)
                     if (result is utils.Result.Success) {
                         availableVehicles = result.data.deals
                     }
                 }
                 if (protectionPackages.isEmpty()) {
-                    val result = bookingRepository.getProtectionPackages("mock_booking_id")
+                    val result = bookingRepository.getProtectionPackages(bookingId)
                     if (result is utils.Result.Success) {
                         protectionPackages = result.data.protectionPackages
                     }
                 }
                 if (availableAddons.isEmpty()) {
-                    val result = vehiclesRepository.getAvailableAddons("mock_booking_id")
+                    val result = vehiclesRepository.getAvailableAddons(bookingId)
                     if (result is utils.Result.Success) {
                         availableAddons = result.data.addons
                     }
@@ -427,22 +446,52 @@ class ChatViewModel(
                                     ?: 0.0
                                 val totalAmount = vehiclePrice + protectionPrice + addonsPrice
                                 
-                                val proposedBooking = SavedBooking(
-                                    id = Clock.System.now().toEpochMilliseconds().toString(),
-                                    bookingId = "chat_booking_${Clock.System.now().toEpochMilliseconds()}",
-                                    vehicle = vehicle,
-                                    protectionPackage = protection,
-                                    addonIds = addonIds,
-                                    timestamp = Clock.System.now().toEpochMilliseconds(),
-                                    totalPrice = totalAmount,
-                                    currency = vehicle.pricing.totalPrice.currency,
-                                    status = BookingStatus.DRAFT
-                                )
-                                options.add(ChatMessageOption(
-                                    deal = vehicle,
-                                    proposedBooking = proposedBooking,
-                                    addonNames = currentAddonNames
-                                ))
+                                // Create a real booking via API
+                                when (val createResult = bookingRepository.createBooking()) {
+                                    is utils.Result.Success -> {
+                                        val realBookingId = createResult.data.id
+                                        
+                                        // Assign vehicle to the booking
+                                        val vehicleResult = bookingRepository.assignVehicleToBooking(
+                                            realBookingId,
+                                            vehicle.vehicle.id
+                                        )
+                                        
+                                        if (vehicleResult is utils.Result.Success) {
+                                            // Assign protection package if present
+                                            if (protection != null) {
+                                                bookingRepository.assignProtectionPackageToBooking(
+                                                    realBookingId,
+                                                    protection.id
+                                                )
+                                            }
+                                            
+                                            val proposedBooking = SavedBooking(
+                                                id = Clock.System.now().toEpochMilliseconds().toString(),
+                                                bookingId = realBookingId,
+                                                vehicle = vehicle,
+                                                protectionPackage = protection,
+                                                addonIds = addonIds,
+                                                timestamp = Clock.System.now().toEpochMilliseconds(),
+                                                totalPrice = totalAmount,
+                                                currency = vehicle.pricing.totalPrice.currency,
+                                                status = BookingStatus.DRAFT
+                                            )
+                                            options.add(ChatMessageOption(
+                                                deal = vehicle,
+                                                proposedBooking = proposedBooking,
+                                                addonNames = currentAddonNames
+                                            ))
+                                        }
+                                        // If vehicle assignment fails, we still add the option but without proposedBooking
+                                        // The user can still see the vehicle and try again
+                                    }
+                                    is utils.Result.Error -> {
+                                        // If booking creation fails, still show the vehicle option
+                                        // but without a proposed booking
+                                        options.add(ChatMessageOption(deal = vehicle))
+                                    }
+                                }
                             }
                         }
                     }
@@ -457,20 +506,14 @@ class ChatViewModel(
         val booking = option.proposedBooking ?: return
         
         viewModelScope.launch {
-            savedBookingRepository.saveBooking(booking)
-            
-            // Update the message to show it's saved
-            // We need to update the specific option in the message?
-            // Or just mark the whole message as saved? 
-            // The UI uses message.isSaved to toggle button color.
-            // If we have multiple options, ideally we track saved state per option.
-            // But ChatMessage has isSaved at top level.
-            // For now, let's just mark the message as saved.
-            // Ideally ChatMessageOption should have isSaved.
-            // But let's stick to the requested scope.
-            
-            val updatedMessage = message.copy(isSaved = true)
-            chatRepository.updateMessage(updatedMessage)
+            try {
+                // Booking already has a real ID from when it was proposed, just save it
+                savedBookingRepository.saveBooking(booking)
+                val updatedMessage = message.copy(isSaved = true)
+                chatRepository.updateMessage(updatedMessage)
+            } catch (e: Exception) {
+                _errorMessage.value = "An error occurred while saving the booking."
+            }
         }
     }
 

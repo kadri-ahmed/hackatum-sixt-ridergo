@@ -35,7 +35,8 @@ interface VehiclesRepository {
     /**
      * Searches for vehicles matching the query.
      * @param query The search query (e.g. brand, model)
+     * @param bookingId The ID of the booking to search vehicles for
      * @return Result containing matching vehicles
      */
-    suspend fun searchVehicles(query: String): Result<AvailableVehiclesDto, NetworkError>
+    suspend fun searchVehicles(query: String, bookingId: String): Result<AvailableVehiclesDto, NetworkError>
 }
