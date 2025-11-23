@@ -72,7 +72,6 @@ fun BookingListScreen(
         topBar = {
             TopAppBar(
                 title = { Text("My Bookings") },
-                // Back button removed as it's now a main tab
             )
         }
     ) { paddingValues ->

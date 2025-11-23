@@ -1,6 +1,7 @@
 package ui.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,8 +13,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -52,6 +58,9 @@ import androidx.compose.animation.togetherWith
 import ui.components.VehicleCard
 import ui.components.VehicleQuickInfo
 import utils.Result
+import org.jetbrains.compose.resources.painterResource
+import ridergo.composeapp.generated.resources.Res
+import ridergo.composeapp.generated.resources.cleveride
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -172,12 +181,17 @@ fun HomeScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "WHICH VEHICLE WOULD YOU LIKE TO DRIVE TODAY?",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Black,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.weight(1f)
+            // Use SVG logo - adapts to dark/light mode
+            // Logo is black, so in dark mode it should be white, in light mode it should be black
+            val logoColor = MaterialTheme.colorScheme.onSurface // Adapts automatically: white in dark mode, black in light mode
+            
+            Image(
+                painter = painterResource(Res.drawable.cleveride),
+                contentDescription = "Cleveride Logo",
+                modifier = Modifier
+                    .height(19.dp),
+                contentScale = ContentScale.Fit,
+                colorFilter = ColorFilter.tint(logoColor)
             )
             androidx.compose.material3.IconButton(onClick = { 
                 bookingFlowViewModel.bookingId.value?.let { id -> navigateToSearch(id) } 

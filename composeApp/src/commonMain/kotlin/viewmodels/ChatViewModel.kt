@@ -186,7 +186,7 @@ class ChatViewModel(
                 val systemMessage = GroqMessage(
                     role = "system",
                     content = """
-                        You are a helpful assistant for RiderGo, a premium car rental service. 
+                        You are a helpful assistant for Cleveride, a premium car rental service. 
                         You help users find vehicles, customize their booking, and manage existing bookings.
                         
                         $userContext
