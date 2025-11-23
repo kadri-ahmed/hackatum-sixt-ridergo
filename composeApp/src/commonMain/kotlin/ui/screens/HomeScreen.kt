@@ -33,10 +33,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import dto.UpsellReason
-import network.api.SixtApi
-import network.api.SixtApiImpl
 import repositories.VehiclesRepository
-import repositories.VehiclesRepositoryImpl
 import ui.components.SwipeableVehicleCard
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.List
@@ -65,20 +62,10 @@ fun HomeScreen(
     popUpToLogin: () -> Unit,
 ) {
     // Dependency Injection (Simplified for this step)
-    // Dependency Injection (Simplified for this step)
-    val client = remember { 
-        HttpClient {
-            install(ContentNegotiation) {
-                json(Json {
-                    ignoreUnknownKeys = true
-                    prettyPrint = true
-                    isLenient = true
-                })
-            }
-        } 
-    }
-    val api = remember { SixtApiImpl(client) }
-    val repository = remember<VehiclesRepository> { VehiclesRepositoryImpl(api) }
+    // Dependency Injection
+    val bookingFlowViewModel: viewmodels.BookingFlowViewModel = org.koin.compose.koinInject()
+    val vehiclesRepository: repositories.VehiclesRepository = org.koin.compose.koinInject()
+    val bookingRepository: repositories.BookingRepository = org.koin.compose.koinInject()
 
     var allDeals by remember { mutableStateOf<List<Deal>>(emptyList()) }
     var selectedContext by remember { mutableStateOf<ContextFilter>(ContextFilter.All) }
@@ -86,14 +73,31 @@ fun HomeScreen(
     var error by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
-        when (val result = repository.getAvailableVehicles("mock_booking_id")) {
-            is Result.Success -> {
-                allDeals = result.data.deals
-                isLoading = false
+        var bookingId = bookingFlowViewModel.bookingId.value
+        if (bookingId == null) {
+            when (val result = bookingRepository.createBooking()) {
+                is Result.Success -> {
+                    bookingId = result.data.id
+                    bookingFlowViewModel.setBookingId(bookingId)
+                }
+                is Result.Error -> {
+                    error = "Failed to create booking session"
+                    isLoading = false
+                    return@LaunchedEffect
+                }
             }
-            is Result.Error -> {
-                error = "Failed to load vehicles"
-                isLoading = false
+        }
+        
+        if (bookingId != null) {
+            when (val result = vehiclesRepository.getAvailableVehicles(bookingId)) {
+                is Result.Success -> {
+                    allDeals = result.data.deals
+                    isLoading = false
+                }
+                is Result.Error -> {
+                    error = "Failed to load vehicles"
+                    isLoading = false
+                }
             }
         }
     }
@@ -141,7 +145,9 @@ fun HomeScreen(
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.weight(1f)
             )
-            androidx.compose.material3.IconButton(onClick = { navigateToSearch("mock_booking_id") }) {
+            androidx.compose.material3.IconButton(onClick = { 
+                bookingFlowViewModel.bookingId.value?.let { id -> navigateToSearch(id) } 
+            }) {
                 androidx.compose.material3.Icon(
                     androidx.compose.material.icons.Icons.Default.Search,
                     contentDescription = "Search"

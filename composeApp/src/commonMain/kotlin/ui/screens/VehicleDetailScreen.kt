@@ -49,17 +49,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import dto.AddonCategory
 import dto.ProtectionPackageDto
-import io.ktor.client.HttpClient
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.serialization.kotlinx.json.json
-import kotlinx.serialization.json.Json
-import network.api.SixtApiImpl
 import repositories.VehiclesRepository
-import repositories.VehiclesRepositoryImpl
 import ui.common.SixtCard
 import ui.common.SixtPrimaryButton
 import ui.theme.SixtOrange
 import utils.Result
+import androidx.compose.runtime.collectAsState
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -69,37 +64,29 @@ fun VehicleDetailScreen(
     onUpgrade: (Deal) -> Unit,
     bookingFlowViewModel: viewmodels.BookingFlowViewModel = org.koin.compose.koinInject()
 ) {
-    // Dependency Injection (Simplified)
-    val client = remember { 
-        HttpClient {
-            install(ContentNegotiation) {
-                json(Json {
-                    ignoreUnknownKeys = true
-                    prettyPrint = true
-                    isLenient = true
-                })
-            }
-        } 
-    }
-    val api = remember { SixtApiImpl(client) }
-    val repository = remember<VehiclesRepository> { VehiclesRepositoryImpl(api) }
+    // Dependency Injection
+    val repository: VehiclesRepository = org.koin.compose.koinInject()
 
     var protectionPackages by remember { mutableStateOf<List<ProtectionPackageDto>>(emptyList()) }
     var addons by remember { mutableStateOf<List<AddonCategory>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    
+    val bookingId = bookingFlowViewModel.bookingId.collectAsState().value
 
-    LaunchedEffect(Unit) {
-        // Fetch protections
-        when (val result = repository.getAvailableProtectionPackages("mock_booking_id")) {
-            is Result.Success -> protectionPackages = result.data.protectionPackages
-            is Result.Error -> println("Error fetching protections")
+    LaunchedEffect(bookingId) {
+        if (bookingId != null) {
+            // Fetch protections
+            when (val result = repository.getAvailableProtectionPackages(bookingId)) {
+                is Result.Success -> protectionPackages = result.data.protectionPackages
+                is Result.Error -> println("Error fetching protections")
+            }
+            // Fetch addons
+            when (val result = repository.getAvailableAddons(bookingId)) {
+                is Result.Success -> addons = result.data.addons
+                is Result.Error -> println("Error fetching addons")
+            }
+            isLoading = false
         }
-        // Fetch addons
-        when (val result = repository.getAvailableAddons("mock_booking_id")) {
-            is Result.Success -> addons = result.data.addons
-            is Result.Error -> println("Error fetching addons")
-        }
-        isLoading = false
     }
 
     Scaffold(
@@ -287,7 +274,6 @@ fun VehicleDetailScreen(
             SixtPrimaryButton(
                 text = "Continue with upgrade",
                 onClick = { 
-                    bookingFlowViewModel.setBookingId("mock_booking_id")
                     bookingFlowViewModel.selectVehicle(deal.vehicle.id)
                     onUpgrade(deal) 
                 }
