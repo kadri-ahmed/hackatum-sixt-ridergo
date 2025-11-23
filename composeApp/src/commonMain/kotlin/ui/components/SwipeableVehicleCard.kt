@@ -66,6 +66,7 @@ fun SwipeableVehicleCard(
     onSwipeLeft: () -> Unit,
     onSwipeRight: () -> Unit,
     onLongClick: (() -> Unit)? = null,
+    shouldAnimate: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val offsetX = remember { androidx.compose.animation.core.Animatable(0f) }
@@ -74,7 +75,8 @@ fun SwipeableVehicleCard(
     val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     // Random "jumpy" animation to indicate swipeability
-    androidx.compose.runtime.LaunchedEffect(Unit) {
+    androidx.compose.runtime.LaunchedEffect(shouldAnimate) {
+        if (!shouldAnimate) return@LaunchedEffect
         while (true) {
             // Wait for a random interval between 5 and 10 seconds
             kotlinx.coroutines.delay(kotlin.random.Random.nextLong(5000, 10000))

@@ -35,6 +35,7 @@ import kotlinx.serialization.json.Json
 import dto.UpsellReason
 import repositories.VehiclesRepository
 import ui.components.SwipeableVehicleCard
+import ui.components.SwipeableChatCard
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.ViewCarousel
@@ -58,6 +59,7 @@ fun HomeScreen(
     navigateToProfile: (Int, Boolean) -> Unit,
     navigateToSearch: (String) -> Unit,
     navigateToTripDetails: () -> Unit,
+    navigateToChat: () -> Unit,
     popBackStack: () -> Unit,
     popUpToLogin: () -> Unit,
 ) {
@@ -126,6 +128,7 @@ fun HomeScreen(
     }
 
     var selectedVehicleForInfo by remember { mutableStateOf<Deal?>(null) }
+    var showChatCard by remember { mutableStateOf(true) }
 
     Column(
         modifier = Modifier
@@ -207,6 +210,7 @@ fun HomeScreen(
                     ) { targetMode ->
                         if (targetMode) {
                             Box(modifier = Modifier.fillMaxSize()) {
+                                // Render vehicle cards first (bottom of stack)
                                 swipeableDeals.reversed().forEach { deal ->
                                     androidx.compose.runtime.key(deal.vehicle.id) {
                                         SwipeableVehicleCard(
@@ -219,7 +223,23 @@ fun HomeScreen(
                                                 onVehicleSelect(deal)
                                                 swipeableDeals = swipeableDeals.drop(1)
                                             },
-                                            onLongClick = { selectedVehicleForInfo = deal }
+                                            onLongClick = { selectedVehicleForInfo = deal },
+                                            shouldAnimate = !(showChatCard && selectedContext == ContextFilter.All)
+                                        )
+                                    }
+                                }
+                                
+                                // Render chat card last so it appears on top
+                                if (showChatCard && selectedContext == ContextFilter.All) {
+                                    androidx.compose.runtime.key("chat_card") {
+                                        SwipeableChatCard(
+                                            onSwipeLeft = {
+                                                showChatCard = false
+                                            },
+                                            onSwipeRight = {
+                                                navigateToChat()
+                                                showChatCard = false
+                                            }
                                         )
                                     }
                                 }

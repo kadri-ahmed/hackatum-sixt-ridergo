@@ -45,6 +45,16 @@ fun NavGraph(
                 navigateToProfile = { _, _ -> navController.navigate(Screen.Profile.route) },
                 navigateToSearch = { navController.navigate(Screen.Search.route) },
                 navigateToTripDetails = { navController.navigate(Screen.TripDetails.route) },
+                navigateToChat = { 
+                    navController.navigate(Screen.Chat.route) {
+                        popUpTo(Screen.Home.route) {
+                            inclusive = false
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
                 popBackStack = { navController.popBackStack() },
                 popUpToLogin = { }
             )
