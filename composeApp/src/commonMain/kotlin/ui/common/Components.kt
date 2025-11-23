@@ -102,7 +102,8 @@ fun SixtInput(
     label: String,
     modifier: Modifier = Modifier,
     singleLine: Boolean = true,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    leadingIcon: androidx.compose.ui.graphics.vector.ImageVector? = null
 ) {
     OutlinedTextField(
         value = value,
@@ -111,7 +112,10 @@ fun SixtInput(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
         singleLine = singleLine,
-        enabled = enabled
+        enabled = enabled,
+        leadingIcon = if (leadingIcon != null) {
+            { androidx.compose.material3.Icon(leadingIcon, contentDescription = null) }
+        } else null
     )
 }
 

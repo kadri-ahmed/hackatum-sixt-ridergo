@@ -55,6 +55,7 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import dto.Deal
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import ui.theme.SixtOrange
 import kotlin.math.roundToInt
 
@@ -67,32 +68,56 @@ fun SwipeableVehicleCard(
     onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    var offsetX by remember { mutableStateOf(0f) }
-    var offsetY by remember { mutableStateOf(0f) }
-    var rotation by remember { mutableStateOf(0f) }
+    val offsetX = remember { androidx.compose.animation.core.Animatable(0f) }
+    val offsetY = remember { androidx.compose.animation.core.Animatable(0f) }
+    val rotation = remember { androidx.compose.animation.core.Animatable(0f) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     Box(
         modifier = modifier
-            .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
-            .rotate(rotation)
+            .offset { IntOffset(offsetX.value.roundToInt(), offsetY.value.roundToInt()) }
+            .rotate(rotation.value)
             .pointerInput(Unit) {
                 detectDragGestures(
                     onDragEnd = {
-                        if (offsetX > 300) {
-                            onSwipeRight()
-                        } else if (offsetX < -300) {
-                            onSwipeLeft()
-                        } else {
-                            offsetX = 0f
-                            offsetY = 0f
-                            rotation = 0f
+                        scope.launch {
+                            val targetX = if (offsetX.value > 0) 1500f else -1500f
+                            if (kotlin.math.abs(offsetX.value) > 300) {
+                                // Swipe out
+                                launch {
+                                    offsetX.animateTo(
+                                        targetValue = targetX,
+                                        animationSpec = androidx.compose.animation.core.tween(
+                                            durationMillis = 200,
+                                            easing = androidx.compose.animation.core.FastOutLinearInEasing
+                                        )
+                                    )
+                                    if (targetX > 0) onSwipeRight() else onSwipeLeft()
+                                }
+                                launch {
+                                    rotation.animateTo(
+                                        targetValue = targetX / 20f,
+                                        animationSpec = androidx.compose.animation.core.tween(
+                                            durationMillis = 200,
+                                            easing = androidx.compose.animation.core.FastOutLinearInEasing
+                                        )
+                                    )
+                                }
+                            } else {
+                                // Snap back
+                                launch { offsetX.animateTo(0f, androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMedium)) }
+                                launch { offsetY.animateTo(0f, androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMedium)) }
+                                launch { rotation.animateTo(0f, androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMedium)) }
+                            }
                         }
                     },
                     onDrag = { change, dragAmount ->
                         change.consume()
-                        offsetX += dragAmount.x
-                        offsetY += dragAmount.y
-                        rotation = offsetX / 10f
+                        scope.launch {
+                            offsetX.snapTo(offsetX.value + dragAmount.x)
+                            offsetY.snapTo(offsetY.value + dragAmount.y)
+                            rotation.snapTo(offsetX.value / 15f)
+                        }
                     }
                 )
             }
@@ -128,14 +153,17 @@ fun SwipeableVehicleCard(
                             contentScale = ContentScale.Crop
                         )
                     }
-                    
-                     // Gradient Overlay
+
+                    // Gradient Overlay
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(
                                 Brush.verticalGradient(
-                                    colors = listOf(Color.Transparent, MaterialTheme.colorScheme.surfaceVariant),
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        MaterialTheme.colorScheme.surfaceVariant
+                                    ),
                                     startY = 300f
                                 )
                             )
@@ -164,9 +192,17 @@ fun SwipeableVehicleCard(
 
                     // Features
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        FeatureChip(icon = Icons.Default.Person, text = "${deal.vehicle.passengersCount}")
+                        FeatureChip(
+                            icon = Icons.Default.Person,
+                            text = "${deal.vehicle.passengersCount}"
+                        )
                         FeatureChip(icon = Icons.Default.Star, text = "${deal.vehicle.bagsCount}")
-                        Text("More", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.align(Alignment.CenterVertically))
+                        Text(
+                            "More",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.align(Alignment.CenterVertically)
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -190,13 +226,13 @@ fun SwipeableVehicleCard(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        
+
                         Box(
                             modifier = Modifier
                                 .background(SixtOrange, RoundedCornerShape(50))
                                 .padding(horizontal = 24.dp, vertical = 12.dp),
 
-                        ) {
+                            ) {
                             Text(
                                 text = "Select",
                                 color = Color.White,
@@ -205,7 +241,7 @@ fun SwipeableVehicleCard(
                         }
                     }
                 }
-                
+
                 // Top Badges
                 Row(
                     modifier = Modifier
@@ -217,7 +253,8 @@ fun SwipeableVehicleCard(
                         Box(
                             modifier = Modifier
                                 .background(SixtOrange, RoundedCornerShape(8.dp))
-                                .padding(horizontal = 12.dp, vertical = 6.dp).clickable {onSwipeRight}
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                                .clickable { onSwipeRight }
                         ) {
                             Text(
                                 text = "Recommended",
@@ -228,11 +265,24 @@ fun SwipeableVehicleCard(
                         }
                     }
                 }
+
+
+                // Swipe Overlay
+                if (offsetX.value != 0f) {
+                    val isRight = offsetX.value > 0
+                    val color = if (isRight) SixtOrange else Color.Red
+                    val alpha = (kotlin.math.abs(offsetX.value) / 600f).coerceIn(0f, 0.5f)
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(color.copy(alpha = alpha))
+                    )
+                }
             }
         }
     }
 }
-
 @Composable
 fun FeatureChip(icon: ImageVector, text: String) {
     Box(

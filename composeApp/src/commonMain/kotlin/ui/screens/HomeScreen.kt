@@ -42,6 +42,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.ViewCarousel
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.EditCalendar
 import ui.common.SlideUpComponent
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -59,6 +60,7 @@ fun HomeScreen(
     onVehicleSelect: (Deal) -> Unit,
     navigateToProfile: (Int, Boolean) -> Unit,
     navigateToSearch: (String) -> Unit,
+    navigateToTripDetails: () -> Unit,
     popBackStack: () -> Unit,
     popUpToLogin: () -> Unit,
 ) {
@@ -143,6 +145,12 @@ fun HomeScreen(
                 androidx.compose.material3.Icon(
                     androidx.compose.material.icons.Icons.Default.Search,
                     contentDescription = "Search"
+                )
+            }
+            androidx.compose.material3.IconButton(onClick = { navigateToTripDetails() }) {
+                androidx.compose.material3.Icon(
+                    androidx.compose.material.icons.Icons.Default.EditCalendar,
+                    contentDescription = "Trip Details"
                 )
             }
             androidx.compose.material3.IconButton(onClick = { isSwipeMode = !isSwipeMode }) {

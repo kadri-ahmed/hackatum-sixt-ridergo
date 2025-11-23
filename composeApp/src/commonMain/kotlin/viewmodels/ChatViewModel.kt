@@ -30,6 +30,8 @@ class ChatViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    private var availableVehicles: List<dto.Deal> = emptyList()
+
     fun sendMessage(text: String) {
         if (text.isBlank() || _isLoading.value) return
 
@@ -44,10 +46,34 @@ class ChatViewModel(
         viewModelScope.launch {
             try {
                 // Convert chat messages to Groq format
-                // Convert chat messages to Groq format
+                // Fetch available vehicles if not already cached
+                if (availableVehicles.isEmpty()) {
+                    val result = vehiclesRepository.getAvailableVehicles("mock_booking_id")
+                    if (result is utils.Result.Success) {
+                        availableVehicles = result.data.deals
+                    }
+                }
+
+                // Construct system prompt with vehicle list
+                val vehicleListString = availableVehicles.joinToString("\n") { deal ->
+                    "- ${deal.vehicle.brand} ${deal.vehicle.model} (${deal.pricing.displayPrice.currency} ${deal.pricing.displayPrice.amount}/day)"
+                }
+
                 val systemMessage = GroqMessage(
                     role = "system",
-                    content = "You are a helpful assistant for RiderGo, a premium car rental service. You help users find vehicles. When recommending a vehicle, mention its full name (Brand + Model) clearly."
+                    content = """
+                        You are a helpful assistant for RiderGo, a premium car rental service. 
+                        You help users find vehicles. 
+                        
+                        Here is the list of ONLY available vehicles you can recommend:
+                        $vehicleListString
+                        
+                        Rules:
+                        1. ONLY recommend vehicles from this list. Do not make up cars.
+                        2. When recommending a vehicle, mention its full name (Brand + Model) clearly so I can show a card.
+                        3. If the user asks for a car not on the list, politely say it's not available and suggest a similar one from the list.
+                        4. Keep responses concise and helpful.
+                    """.trimIndent()
                 )
                 
                 val groqMessages = listOf(systemMessage) + _messages.value.map { msg ->
@@ -108,18 +134,19 @@ class ChatViewModel(
     }
 
     private suspend fun findMatchingVehicle(text: String): dto.Deal? {
-        // This is a simplified matching logic. 
-        // In a real app, you might want to use structured output from the LLM or more robust search.
-        val result = vehiclesRepository.getAvailableVehicles("mock_booking_id")
-        if (result is utils.Result.Success) {
-            val deals = result.data.deals
-            // Check if any vehicle brand+model is mentioned in the text
-            return deals.firstOrNull { deal ->
-                val fullName = "${deal.vehicle.brand} ${deal.vehicle.model}"
-                text.contains(fullName, ignoreCase = true) || 
-                text.contains(deal.vehicle.model, ignoreCase = true)
-            }
+        // Use cached vehicles if available, otherwise fetch
+        if (availableVehicles.isEmpty()) {
+             val result = vehiclesRepository.getAvailableVehicles("mock_booking_id")
+             if (result is utils.Result.Success) {
+                 availableVehicles = result.data.deals
+             }
         }
-        return null
+        
+        // Check if any vehicle brand+model is mentioned in the text
+        return availableVehicles.firstOrNull { deal ->
+            val fullName = "${deal.vehicle.brand} ${deal.vehicle.model}"
+            text.contains(fullName, ignoreCase = true) || 
+            text.contains(deal.vehicle.model, ignoreCase = true)
+        }
     }
 }
