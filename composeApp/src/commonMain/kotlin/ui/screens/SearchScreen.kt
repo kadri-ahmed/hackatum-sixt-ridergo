@@ -15,12 +15,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,158 +51,75 @@ import viewmodels.SearchViewModel
 import ui.components.VehicleCard
 
 
-@OptIn(KoinExperimentalAPI::class, ExperimentalFoundationApi::class)
+
+@OptIn(KoinExperimentalAPI::class, ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
     viewModel: viewmodels.SearchViewModel = koinViewModel(),
-    onSearch: (String) -> Unit
+    onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var destination by remember { mutableStateOf("") }
-    var pickupDate by remember { mutableStateOf("Oct 24, 10:00 AM") }
-    var returnDate by remember { mutableStateOf("Oct 27, 10:00 AM") }
+    var searchQuery by remember { mutableStateOf("") }
 
-    // Handle side effects
-    LaunchedEffect(uiState) {
-        if (uiState is ui.state.SearchUiState.Success) {
-            val bookingId = (uiState as ui.state.SearchUiState.Success).bookingId
-            onSearch(bookingId)
-            viewModel.resetState()
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        viewModel.ensureBookingCreated()
-    }
-    
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Search Vehicles") },
+                navigationIcon = {
+                    androidx.compose.material3.IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
+            )
+        },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp)
             ) {
-                // Hero Section
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(SixtOrange, Color(0xFFFF8F00))
-                            )
-                        )
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(24.dp)
-                    ) {
-                        Text(
-                            text = "RiderGo",
-                            style = MaterialTheme.typography.displaySmall,
-                            color = Color.White
-                        )
-                        Text(
-                            text = "Premium Car Rental",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Color.White.copy(alpha = 0.9f)
-                        )
-                    }
-                }
+                SixtInput(
+                    value = searchQuery,
+                    onValueChange = { 
+                        searchQuery = it
+                        viewModel.searchVehicles(it) 
+                    },
+                    label = "Search by Brand or Model (e.g. BMW)",
+                    leadingIcon = Icons.Default.Search
 
-                Column(modifier = Modifier.padding(24.dp)) {
-                    SixtCard {
-                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            SectionHeader("Where to?")
-                            
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Filled.LocationOn, contentDescription = null, tint = SixtOrange)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                SixtInput(
-                                    value = destination,
-                                    onValueChange = { destination = it },
-                                    label = "Pick-up Location"
-                                )
-                            }
+                )
 
-                            SectionHeader("When?")
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Filled.DateRange, contentDescription = null, tint = SixtOrange)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    SixtInput(
-                                        value = pickupDate,
-                                        onValueChange = { pickupDate = it },
-                                        label = "Pick-up"
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    SixtInput(
-                                        value = returnDate,
-                                        onValueChange = { returnDate = it },
-                                        label = "Return"
-                                    )
-                                }
-                            }
-                            
-                            Spacer(modifier = Modifier.height(8.dp))
-                            
-                            SixtPrimaryButton(
-                                text = "Find Vehicles",
-                                onClick = { viewModel.createBooking(destination) },
-                                enabled = uiState !is ui.state.SearchUiState.Loading
-                            )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                if (uiState is ui.state.SearchUiState.SearchResults) {
+                    val results = (uiState as ui.state.SearchUiState.SearchResults).vehicles
+                    if (results.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("No vehicles found matching '$searchQuery'", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // Contextual Intelligence Teaser
-                    if (destination.isNotEmpty()) {
-                        ContextualInsightCard(destination)
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    SectionHeader("Search specific vehicle")
-                    var searchQuery by remember { mutableStateOf("") }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.weight(1f)) {
-                            SixtInput(
-                                value = searchQuery,
-                                onValueChange = { searchQuery = it },
-                                label = "e.g. BMW, Mercedes"
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        SixtPrimaryButton(
-                            text = "Search",
-                            onClick = { viewModel.searchVehicles(searchQuery) },
-                            modifier = Modifier.width(100.dp)
-                        )
-                    }
-
-                    if (uiState is ui.state.SearchUiState.SearchResults) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        val results = (uiState as ui.state.SearchUiState.SearchResults).vehicles
-                        if (results.isEmpty()) {
-                            Text("No vehicles found matching '$searchQuery'")
-                        } else {
-                            Text("Found ${results.size} vehicles:")
-                            Spacer(modifier = Modifier.height(8.dp))
-                            results.forEach { deal ->
+                    } else {
+                        Text("Found ${results.size} vehicles:", style = MaterialTheme.typography.titleSmall)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        androidx.compose.foundation.lazy.LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            items(results) { deal ->
                                 ui.components.VehicleCard(
                                     deal = deal,
                                     onSelect = { /* Navigate to detail? */ },
                                     onLongClick = { /* Quick info? */ }
                                 )
-                                Spacer(modifier = Modifier.height(8.dp))
                             }
                         }
+                    }
+                } else if (searchQuery.isEmpty()) {
+                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Start typing to search...", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -211,25 +132,7 @@ fun SearchScreen(
                         .background(Color.Black.copy(alpha = 0.3f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    ui.common.LoadingIndicator(message = "Creating your booking...")
-                }
-            }
-            
-            // Error Overlay
-            if (uiState is ui.state.SearchUiState.Error) {
-                val errorMsg = (uiState as ui.state.SearchUiState.Error).message
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.3f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    SixtCard(modifier = Modifier.padding(32.dp)) {
-                        ui.common.ErrorView(
-                            message = errorMsg,
-                            onRetry = { viewModel.createBooking(destination) }
-                        )
-                    }
+                    ui.common.LoadingIndicator(message = "Searching...")
                 }
             }
         }

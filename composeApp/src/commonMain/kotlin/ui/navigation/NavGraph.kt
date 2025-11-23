@@ -19,6 +19,7 @@ sealed class Screen(val route: String) {
     object VehicleDetail : Screen("vehicle_detail")
     object Protection : Screen("protection")
     object BookingSummary : Screen("booking_summary")
+    object TripDetails : Screen("trip_details")
 }
 
 @Composable
@@ -42,20 +43,32 @@ fun NavGraph(
                 },
                 navigateToProfile = { _, _ -> navController.navigate(Screen.Profile.route) },
                 navigateToSearch = { navController.navigate(Screen.Search.route) },
+                navigateToTripDetails = { navController.navigate(Screen.TripDetails.route) },
                 popBackStack = { navController.popBackStack() },
                 popUpToLogin = { }
             )
         }
         composable(Screen.Search.route) {
             ui.screens.SearchScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.TripDetails.route) {
+            ui.screens.TripDetailsScreen(
+                onBack = { navController.popBackStack() },
                 onSearch = { bookingId ->
-                    // If search creates a booking, maybe navigate to home or details?
-                    // For now, just pop back or stay
+                    // When trip details are updated, maybe go back to home to see new vehicles?
+                    navController.popBackStack()
                 }
             )
         }
         composable(Screen.Chat.route) {
-            ChatScreen()
+            ChatScreen(
+                onVehicleSelect = { deal ->
+                    onVehicleSelect(deal)
+                    navController.navigate(Screen.VehicleDetail.route)
+                }
+            )
         }
         composable(Screen.Profile.route) {
             ProfileScreen(
